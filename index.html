@@ -138,7 +138,6 @@
         .audio-control.playing .wave-bar:nth-child(2) { animation-delay: 0.15s; }
         .audio-control.playing .wave-bar:nth-child(3) { animation-delay: 0.3s; }
 
-        /* Kontejner pro plynulé střídání sekcí */
         .content-view {
             flex-grow: 1;
             display: grid;
@@ -186,7 +185,6 @@
             margin-bottom: 40px;
         }
 
-        /* Designové kontaktní rozhraní */
         .contact-card {
             background: rgba(255, 255, 255, 0.01);
             border: 1px solid rgba(255, 255, 255, 0.03);
@@ -201,7 +199,7 @@
 
         .contact-title {
             font-family: 'Syncopate', sans-serif;
-            font-size: 1.4rem;
+            font-size: 1.2rem;
             letter-spacing: 0.3em;
             margin-bottom: 35px;
             text-transform: uppercase;
@@ -399,7 +397,7 @@
             }
         `;
 
-        // --- MASTER OBJECT SHADERS ---
+        // --- MASTER OBJECT SHADERS (OPRAVENÝ A ZKONTROLOVANÝ) ---
         const vertexShader = `
             uniform float uTime; varying vec3 vNormal; varying vec3 vViewPosition;
             void main() {
@@ -416,17 +414,25 @@
             void main() {
                 vec3 normal = normalize(vNormal); vec3 viewDir = normalize(vViewPosition);
                 vec3 baseBlack = vec3(0.002, 0.002, 0.003); 
+                
                 vec3 lightDir1 = normalize(vec3(6.0, 10.0, 5.0));
                 vec3 lightDir2 = normalize(vec3(-6.0, -5.0, 4.0));
                 vec3 lightDir3 = normalize(vec3(0.0, 0.0, 1.0));
+                
                 vec3 reflectColor = (uMaterialType == 1) ? vec3(0.01, 0.45, 0.12) : vec3(1.0, 1.0, 1.0);
+                
                 float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 8.5);
                 vec3 edgeReflection = reflectColor * fresnel * 0.85;
-                float spec1 = pow(max(dot(normal, halfDir1), 0.0), 90.0);
+                
+                // Opravená deklarace směrů před výpočtem mocnin (specularů)
                 vec3 halfDir1 = normalize(lightDir1 + viewDir);
-                float spec2 = pow(max(dot(normal, normalize(lightDir2 + viewDir)), 0.0), 64.0);
+                vec3 halfDir2 = normalize(lightDir2 + viewDir);
+                
+                float spec1 = pow(max(dot(normal, halfDir1), 0.0), 90.0);
+                float spec2 = pow(max(dot(normal, halfDir2), 0.0), 64.0);
                 float spec3 = pow(max(dot(normal, lightDir3), 0.0), 32.0);
-                gl_FragColor = vec4(baseBlack + edgeReflection + reflectColor * (pow(max(dot(normal, halfDir1), 0.0), 90.0) * 0.95 + spec2 * 0.30 + spec3 * 0.08), 1.0);
+                
+                gl_FragColor = vec4(baseBlack + edgeReflection + reflectColor * (spec1 * 0.95 + spec2 * 0.30 + spec3 * 0.08), 1.0);
             }
         `;
 
@@ -435,7 +441,7 @@
                 this.container = document.getElementById('canvas-container');
                 this.floatingObjects = [];
                 this.mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
-                this.currentView = 'home'; // 'home' nebo 'contact'
+                this.currentView = 'home';
                 
                 this.init();
                 this.createBackgroundSpace();
@@ -479,9 +485,9 @@
                 this.geoHomeSilver = new THREE.IcosahedronGeometry(0.5, 64);
                 this.geoHomeGreen = new THREE.TorusGeometry(0.42, 0.16, 32, 96);
 
-                // ÚPLNĚ NOVÉ DESIGNY PRO KONTAKTNÍ STRANU (Krystaly a Architektonické uzly)
-                this.geoContactSilver = new THREE.OctahedronGeometry(0.52, 0); // Ostrý low-poly drahokam
-                this.geoContactGreen = new THREE.TorusKnotGeometry(0.33, 0.11, 120, 16, 3, 4); // Sofistikovaný uzel
+                // TVARY PRO KONTAKT (Krystaly a Uzly)
+                this.geoContactSilver = new THREE.OctahedronGeometry(0.52, 0); 
+                this.geoContactGreen = new THREE.TorusKnotGeometry(0.33, 0.11, 120, 16, 3, 4); 
             }
 
             createFloatingSystem() {
@@ -499,7 +505,6 @@
 
                 const countPerType = 13;
 
-                // Vygenerování objektů (ve výchozím stavu použijí geometrie pro Home)
                 for (let i = 0; i < countPerType; i++) {
                     this.addObjectToScene(this.geoHomeSilver, this.silverMat, 'silver');
                 }
@@ -515,7 +520,7 @@
                 
                 mesh.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, (Math.random() - 0.5) * 6.5);
                 mesh.userData = {
-                    typeId: typeId, // kódování typu odlesku
+                    typeId: typeId, 
                     radius: radius, angle: angle,
                     spiralSpeed: (Math.random() * 0.022 + 0.008) * (Math.random() > 0.5 ? 1 : -1),
                     rotSpeedX: Math.random() * 0.3 + 0.1, rotSpeedY: Math.random() * 0.3 + 0.1,
@@ -527,16 +532,12 @@
                 this.floatingObjects.push(mesh);
             }
 
-            // KLÍČOVÁ METODA: Okamžitá transformace tvarů při přepnutí sekcí
             updateShapesForView(view) {
                 this.currentView = view;
-                
                 this.floatingObjects.forEach(mesh => {
                     if (view === 'contact') {
-                        // Přepnutí na krystaly a uzly
                         mesh.geometry = (mesh.userData.typeId === 'silver') ? this.geoContactSilver : this.geoContactGreen;
                     } else {
-                        // Návrat ke koulím a prstencům
                         mesh.geometry = (mesh.userData.typeId === 'silver') ? this.geoHomeSilver : this.geoHomeGreen;
                     }
                 });
@@ -560,7 +561,6 @@
                 this.uniforms.uTime.value = time;
                 this.bgUniforms.uTime.value = time;
 
-                // Rychlejší rotace v kontaktním pohledu pro dramatický efekt změny
                 const rotModifier = (this.currentView === 'contact') ? 2.2 : 1.0;
                 this.sceneGroup.rotation.y = time * 0.02 * rotModifier;
 
@@ -587,7 +587,6 @@
             }
         }
 
-        // --- MANIPULACE S UI A PŘEPÍNÁNÍ STRÁNEK ---
         function initNavigation(webglScene) {
             const btnContact = document.getElementById('contact-view-btn');
             const logo = document.getElementById('brand-logo');
@@ -602,7 +601,7 @@
                         secContact.classList.add('active');
                         btnContact.innerText = "Back";
                         footerTag.innerText = "AUTHENTIC METRIC INTERACTION SYSTEM";
-                        webglScene.updateShapesForView('contact');
+                        if(webglScene) webglScene.updateShapesForView('contact');
                     }, 400);
                 } else {
                     secContact.classList.remove('active');
@@ -610,7 +609,7 @@
                         secHome.classList.add('active');
                         btnContact.innerText = "Contact";
                         footerTag.innerText = "VISUAL ENGAGEMENT FOR HIGH-FIDELITY DISCOVERY";
-                        webglScene.updateShapesForView('home');
+                        if(webglScene) webglScene.updateShapesForView('home');
                     }, 400);
                 }
             }
@@ -625,7 +624,6 @@
             });
         }
 
-        // --- AUDIO ENGINE ---
         function initAudioEngine() {
             const audio = document.getElementById('bg-music');
             const btn = document.getElementById('audio-toggle');
