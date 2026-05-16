@@ -44,7 +44,7 @@
             pointer-events: none;
         }
 
-        /* PŮVODNÍ Film Grain Overlay Effect */
+        /* Film Grain Overlay Effect */
         .grain-overlay {
             position: fixed;
             top: 0;
@@ -325,7 +325,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
     <script>
-        // --- WebGL PŮVODNÍ Shaders Setup ---
+        // --- WebGL Shaders Setup ---
         const vertexShader = `
             uniform float uTime;
             uniform float uProgress;
@@ -416,6 +416,8 @@
         class WebGLApp {
             constructor() {
                 this.container = document.getElementById('canvas-container');
+                if (!this.container) return;
+                
                 this.objectsCount = 14; 
                 this.meshArray = [];
                 this.scrollProgress = 0;
@@ -424,7 +426,6 @@
                 this.init();
                 this.createSceneObjects();
                 this.addEventListeners();
-                this.initAudioLogic();
                 this.animate();
             }
 
@@ -443,7 +444,6 @@
 
                 this.clock = new THREE.Clock();
 
-                // OPRAVENO: Vrácení plného filmového osvětlení
                 const ambientLight = new THREE.AmbientLight(0xffffff, 0.05);
                 this.scene.add(ambientLight);
 
@@ -485,42 +485,6 @@
                 this.scene.add(this.spiralGroup);
             }
 
-            initAudioLogic() {
-                const audio = document.getElementById('bg-music');
-                const btn = document.getElementById('audio-toggle');
-                const btnText = document.getElementById('audio-status-text');
-
-                if (!audio || !btn) return;
-
-                audio.volume = 0.5;
-
-                const startAudio = () => {
-                    if (audio.paused && !btn.classList.contains('playing')) {
-                        audio.play().then(() => {
-                            btn.classList.add('playing');
-                            btnText.innerText = "Sound On";
-                        }).catch(err => console.log("Audio target block:", err));
-                    }
-                };
-
-                const toggleAudio = (e) => {
-                    if (e) e.stopPropagation();
-                    if (audio.paused) {
-                        audio.play().then(() => {
-                            btn.classList.add('playing');
-                            btnText.innerText = "Sound On";
-                        }).catch(err => console.log(err));
-                    } else {
-                        audio.pause();
-                        btn.classList.remove('playing');
-                        btnText.innerText = "Sound Off";
-                    }
-                };
-
-                btn.addEventListener('click', toggleAudio);
-                document.body.addEventListener('click', startAudio, { once: true });
-            }
-
             addEventListeners() {
                 window.addEventListener('resize', this.onWindowResize.bind(this));
                 window.addEventListener('mousemove', this.onMouseMove.bind(this));
@@ -555,7 +519,6 @@
                 const elapsedTime = this.clock.getElapsedTime();
                 this.shaderUniforms.uTime.value = elapsedTime;
 
-                // OPRAVENO: Obnovení plynulé fyziky pohybu myši (Lerp) a parallaxu kamery
                 this.mouse.x += (this.mouse.targetX - this.mouse.x) * 0.05;
                 this.mouse.y += (this.mouse.targetY - this.mouse.y) * 0.05;
 
@@ -566,7 +529,6 @@
                 const spiralRadius = 3.5 + (this.mouse.x * 0.5);
                 const spiralHeight = 12.0;
 
-                // OPRAVENO: Matematicky přesný výpočet šroubovice v čase navázaný na scroll
                 this.meshArray.forEach((mesh) => {
                     const data = mesh.userData;
                     const currentAngle = data.angleOffset + (elapsedTime * 0.15) + (this.scrollProgress * Math.PI * 2.5);
@@ -589,8 +551,56 @@
             }
         }
 
+        // --- Samostatná a izolovaná správa audia ---
+        function initAudioEngine() {
+            const audio = document.getElementById('bg-music');
+            const btn = document.getElementById('audio-toggle');
+            const btnText = document.getElementById('audio-status-text');
+
+            if (!audio || !btn) return;
+
+            audio.volume = 0.5;
+
+            const startAudio = () => {
+                if (audio.paused && !btn.classList.contains('playing')) {
+                    audio.play().then(() => {
+                        btn.classList.add('playing');
+                        if (btnText) btnText.innerText = "Sound On";
+                    }).catch(e => console.log("Záložní start zablokován:", e));
+                }
+            };
+
+            const toggleAudio = (e) => {
+                if (e) e.stopPropagation();
+                if (audio.paused) {
+                    audio.play().then(() => {
+                        btn.classList.add('playing');
+                        if (btnText) btnText.innerText = "Sound On";
+                    }).catch(err => console.log("Chyba tlačítka zvuku:", err));
+                } else {
+                    audio.pause();
+                    btn.classList.remove('playing');
+                    if (btnText) btnText.innerText = "Sound Off";
+                }
+            };
+
+            btn.addEventListener('click', toggleAudio);
+            document.body.addEventListener('click', startAudio, { once: true });
+        }
+
+        // Spuštění WebGL a Audia odděleně po načtení stránky
         window.addEventListener('DOMContentLoaded', () => {
-            new WebGLApp();
+            try {
+                new WebGLApp();
+            } catch (webGlError) {
+                console.error("WebGL se nepodařilo inicializovat:", webGlError);
+            }
+
+            try {
+                initAudioEngine();
+            } catch (audioError) {
+                console.error("Audio engine selhal:", audioError);
+            }
         });
     </script>
 </body>
