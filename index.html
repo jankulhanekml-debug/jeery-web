@@ -256,7 +256,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <script>
-        // --- PŮVODNÍ ORGANICKÉ SHADERY PRO VZNÁŠEJÍCÍ SE PŘEDMĚTY ---
+        // --- OPRAVENÉ A STABILNÍ MATEMATICKÉ SHADERY ---
         const vertexShader = `
             uniform float uTime;
             varying vec2 vUv;
@@ -275,6 +275,10 @@
                 vec3 l = 1.0 - g;
                 vec3 i1 = min( g.xyz, l.zxy );
                 vec3 i2 = max( g.xyz, l.zxy );
+                vec3 i3 = 1.0 - i1;
+                vec3 i4 = 1.0 - i2;
+                vec3 x1 = x0 - i1 + vec3(C.xxx);
+                vec3 x2 = x0 - i2 + vec3(C.yyy);
                 vec3 x3 = x0 - D.yyy;
                 i = mod(i, 289.0 );
                 vec4 p = permute( permute( permute(
@@ -311,9 +315,9 @@
                 vUv = uv;
                 vec3 pos = position;
                 
-                // Jemná lokální deformace každého samostatného předmětu
-                float noiseAmp = 0.28;
-                float noiseFreq = 1.2;
+                // Jemná organická deformace vznášejících se prvků
+                float noiseAmp = 0.25;
+                float noiseFreq = 1.5;
                 float noise = snoise(vec3(pos.x * noiseFreq, pos.y * noiseFreq + uTime * 0.4, pos.z * noiseFreq));
                 pos += normal * noise * noiseAmp;
                 
@@ -333,7 +337,7 @@
                 vec3 normal = normalize(vNormal);
                 vec3 viewDir = normalize(vViewPosition);
                 
-                // Fresnelův efekt (světlejší hrany a temné jádro pro luxusní vzhled)
+                // Fresnelův efekt (kovový vzhled s jasnějšími odlesky na hranách)
                 float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 4.0);
                 
                 vec3 lightDir = normalize(vec3(5.0, 5.0, 4.0));
@@ -350,7 +354,7 @@
             }
         `;
 
-        // --- Tvorba a správa 3D scény ---
+        // --- Inicializace a správa 3D scény ---
         class WebGLScene {
             constructor() {
                 this.container = document.getElementById('canvas-container');
@@ -380,7 +384,7 @@
             }
 
             createFloatingSystem() {
-                // Základní detailní sféra pro deformaci vznášejících se částic
+                // Sféra s dostatečným detailem pro plynulou deformaci šumem
                 const geometry = new THREE.IcosahedronGeometry(0.5, 32);
 
                 this.uniforms = {
@@ -393,19 +397,19 @@
                     uniforms: this.uniforms
                 });
 
-                // Generování většího počtu organických těles rozprostřených v prostoru
+                // Vygenerování 18 samostatných vznášejících se organických kousků
                 const objectCount = 18;
                 for (let i = 0; i < objectCount; i++) {
                     const mesh = new THREE.Mesh(geometry, shaderMaterial);
                     
-                    // Náhodné rozmístění v prostoru před kamerou
+                    // Rozprostření do prostoru kolem středu obrazovky
                     mesh.position.set(
                         (Math.random() - 0.5) * 10,
                         (Math.random() - 0.5) * 8,
                         (Math.random() - 0.5) * 5 - 1
                     );
 
-                    // Unikátní vlastnosti pro plynulý vznášivý pohyb
+                    // Unikátní parametry pro nepravidelné vznášení
                     mesh.userData = {
                         speedX: (Math.random() - 0.5) * 0.15,
                         speedY: (Math.random() - 0.5) * 0.15,
@@ -429,7 +433,6 @@
                 });
 
                 window.addEventListener('mousemove', (e) => {
-                    // Sledování kurzoru pro interaktivní paralax efekt
                     this.mouse.targetX = (e.clientX / window.innerWidth) * 2 - 1;
                     this.mouse.targetY = -(e.clientY / window.innerHeight) * 2 + 1;
                 });
@@ -441,7 +444,7 @@
                 const time = this.clock.getElapsedTime();
                 this.uniforms.uTime.value = time;
 
-                // Paralaxní efekt kamery podle pohybů myši
+                // Jemný paralaxní pohyb kamery podle kurzoru myši
                 this.mouse.x += (this.mouse.targetX - this.mouse.x) * 0.05;
                 this.mouse.y += (this.mouse.targetY - this.mouse.y) * 0.05;
                 
@@ -449,19 +452,17 @@
                 this.camera.position.y = this.mouse.y * 1.5;
                 this.camera.lookAt(0, 0, 0);
 
-                // Animování vznášení a rotace pro každý organický předmět zvlášť
+                // Pohyb a nezávislá rotace každého jednoho objektu
                 this.floatingObjects.forEach(mesh => {
                     const data = mesh.userData;
                     
-                    // Kombinace goniometrických funkcí pro naprosto nepravidelné vznášení
                     mesh.position.y += Math.sin(time * 0.5 + data.seed) * 0.003;
                     mesh.position.x += Math.cos(time * 0.3 + data.seed) * 0.002;
                     
-                    // Rotace jednotlivých těles
                     mesh.rotation.x += 0.005 * data.rotSpeedX;
                     mesh.rotation.y += 0.007 * data.rotSpeedY;
                     
-                    // Mírné pulzování velikosti v čase
+                    // Jemné pulzování velikosti v čase
                     const scalePulse = data.baseScale + Math.sin(time * 0.8 + data.seed) * 0.05;
                     mesh.scale.setScalar(scalePulse);
                 });
@@ -470,7 +471,7 @@
             }
         }
 
-        // --- Zabezpečená a izolovaná správa audia ---
+        // --- Zabezpečená správa audia ---
         function initAudioEngine() {
             const audio = document.getElementById('bg-music');
             const btn = document.getElementById('audio-toggle');
@@ -484,7 +485,7 @@
                     audio.play().then(() => {
                         btn.classList.add('playing');
                         if (btnText) btnText.innerText = "Sound On";
-                    }).catch(() => console.log("Autoplay protection bypassed"));
+                    }).catch(() => console.log("Autoplay block pass"));
                 }
             };
 
@@ -505,12 +506,11 @@
             document.body.addEventListener('click', startPlaying, { once: true });
         }
 
-        // Spuštění komponent nezávisle na sobě
         window.addEventListener('DOMContentLoaded', () => {
             try {
                 new WebGLScene();
             } catch (e) {
-                console.error("Chyba 3D grafiky:", e);
+                console.error("Grafický podsystém selhal:", e);
             }
             initAudioEngine();
         });
