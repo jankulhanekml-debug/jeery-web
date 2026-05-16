@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="cs">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,6 @@
             --bg-color: #050505;
             --text-main: #ffffff;
             --text-muted: #888888;
-            --accent: #ffffff;
         }
 
         * {
@@ -23,17 +22,18 @@
             padding: 0;
         }
 
+        /* OPRAVA: Striktně zamezíme jakémukoliv nesmyslnému scrollování a přetékání */
         body, html {
             width: 100%;
             height: 100%;
-            overflow-x: hidden;
+            overflow: hidden;
             background-color: var(--bg-color);
             font-family: 'Plus Jakarta Sans', sans-serif;
             color: var(--text-main);
             -webkit-font-smoothing: antialiased;
         }
 
-        /* WebGL Canvas Container */
+        /* 3D Plátno fixované přesně na obrazovku */
         #canvas-container {
             position: fixed;
             top: 0;
@@ -41,10 +41,9 @@
             width: 100%;
             height: 100vh;
             z-index: 1;
-            pointer-events: none;
         }
 
-        /* Film Grain Overlay Effect */
+        /* Filmový šum */
         .grain-overlay {
             position: fixed;
             top: 0;
@@ -57,25 +56,25 @@
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
         }
 
-        /* UI Layout Layers */
+        /* Uživatelské rozhraní */
         .ui-layer {
-            position: relative;
-            z-index: 3;
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            min-height: 100vh;
+            height: 100vh;
+            z-index: 3;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            pointer-events: none;
+            pointer-events: none; /* Klikání propouštíme na tlačítka */
         }
 
-        /* Navigation Header */
         header {
             padding: 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            pointer-events: auto;
         }
 
         .nav-logo {
@@ -85,7 +84,7 @@
             text-transform: uppercase;
         }
 
-        /* Premium Audio Controller Button */
+        /* Stylové audio tlačítko */
         .audio-control {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -108,7 +107,6 @@
         .audio-control:hover {
             background: var(--text-main);
             color: var(--bg-color);
-            border-color: var(--text-main);
         }
 
         .audio-waves {
@@ -123,7 +121,6 @@
             width: 2px;
             height: 3px;
             background: currentColor;
-            transition: height 0.3s ease;
         }
 
         .audio-control.playing .wave-bar {
@@ -132,7 +129,6 @@
         .audio-control.playing .wave-bar:nth-child(2) { animation-delay: 0.2s; }
         .audio-control.playing .wave-bar:nth-child(3) { animation-delay: 0.4s; }
 
-        /* Hero Main Section */
         .hero {
             flex-grow: 1;
             display: flex;
@@ -144,7 +140,6 @@
         }
 
         .hero-title-container {
-            position: relative;
             margin-bottom: 30px;
         }
 
@@ -161,7 +156,6 @@
             user-select: none;
         }
 
-        /* Premium SoundCloud Button */
         .soundcloud-btn {
             pointer-events: auto;
             display: inline-flex;
@@ -186,23 +180,15 @@
         .soundcloud-btn:hover {
             background: var(--text-main);
             color: var(--bg-color);
-            border-color: var(--text-main);
             transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.1);
         }
 
         .soundcloud-btn svg {
             width: 16px;
             height: 16px;
             fill: currentColor;
-            transition: transform 0.4s ease;
         }
 
-        .soundcloud-btn:hover svg {
-            transform: scale(1.1);
-        }
-
-        /* Footer Info */
         footer {
             padding: 40px;
             display: flex;
@@ -213,62 +199,15 @@
             color: var(--text-muted);
         }
 
-        /* Scroll Progress Indicator */
-        .scroll-hint {
-            position: absolute;
-            bottom: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.65rem;
-            letter-spacing: 0.3em;
-            text-transform: uppercase;
-            color: var(--text-muted);
-        }
-
-        .scroll-line {
-            width: 1px;
-            height: 40px;
-            background: linear-gradient(to bottom, var(--text-muted), transparent);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .scroll-line::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 50%;
-            background: var(--text-main);
-            animation: scrollDrop 2s infinite ease-in-out;
-        }
-
-        .scroll-spacer {
-            height: 100vh;
-            pointer-events: none;
-        }
-
         @keyframes soundWave {
             0% { height: 3px; }
             50% { height: 12px; }
             100% { height: 3px; }
         }
 
-        @keyframes scrollDrop {
-            0% { transform: translateY(-100%); }
-            80% { transform: translateY(200%); }
-            100% { transform: translateY(200%); }
-        }
-
         @media (max-width: 768px) {
             header { padding: 24px; }
             footer { padding: 24px; flex-direction: column; gap: 12px; text-align: center; }
-            .scroll-hint { display: none; }
         }
     </style>
 </head>
@@ -307,10 +246,6 @@
                 </svg>
                 Listen on SoundCloud
             </a>
-            <div class="scroll-hint">
-                <span>Explore Sound</span>
-                <div class="scroll-line"></div>
-            </div>
         </section>
 
         <footer>
@@ -319,288 +254,187 @@
         </footer>
     </div>
 
-    <div class="scroll-spacer"></div>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
     <script>
-        // --- WebGL Shaders Setup ---
-        const vertexShader = `
-            uniform float uTime;
-            uniform float uProgress;
-            varying vec2 vUv;
-            varying vec3 vNormal;
-            varying vec3 vViewPosition;
-            
-            vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}
-            vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
-            
-            float snoise(vec3 v){
-                const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
-                const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
-                vec3 i  = floor(v + dot(v, C.yyy) );
-                vec3 x0 =   v - i + dot(i, C.xxx) ;
-                vec3 g = step(x0.yzx, x0.xyz);
-                vec3 l = 1.0 - g;
-                vec3 i1 = min( g.xyz, l.zxy );
-                vec3 i2 = max( g.xyz, l.zxy );
-                vec3 x3 = x0 - D.yyy;
-                i = mod(i, 289.0 );
-                vec4 p = permute( permute( permute(
-                            i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
-                        + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
-                        + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
-                float n_ = 0.142857142857;
-                vec3  ns = n_ * D.wyz - D.xzx;
-                vec4 j = p - 49.0 * floor(p * ns.z *ns.z);
-                vec4 x_ = floor(j * ns.z);
-                vec4 y_ = floor(j - 7.0 * x_ );
-                vec4 x = x_ *ns.x + ns.yyyy;
-                vec4 y = y_ *ns.x + ns.yyyy;
-                vec4 h = 1.0 - abs(x) - abs(y);
-                vec4 b0 = vec4( x.xy, y.xy );
-                vec4 b1 = vec4( x.zw, y.zw );
-                vec4 s0 = floor(b0)*2.0 + 1.0;
-                vec4 s1 = floor(b1)*2.0 + 1.0;
-                vec4 sh = -step(h, vec4(0.0));
-                vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
-                vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;
-                vec3 p0 = vec3(a0.xy,h.x);
-                vec3 p1 = vec3(a0.zw,h.y);
-                vec3 p2 = vec3(a1.xy,h.z);
-                vec3 p3 = vec3(a1.zw,h.w);
-                vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
-                p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
-                vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
-                m = m * m;
-                return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3) ) );
-            }
-
-            void main() {
-                vUv = uv;
-                vec3 pos = position;
-                float noiseAmp = 0.25 + (uProgress * 0.15);
-                float noiseFreq = 1.2;
-                float noise = snoise(vec3(pos.x * noiseFreq, pos.y * noiseFreq + uTime * 0.4, pos.z * noiseFreq));
-                pos += normal * noise * noiseAmp;
-                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-                vViewPosition = -mvPosition.xyz;
-                vNormal = normalMatrix * normal;
-                gl_Position = projectionMatrix * mvPosition;
-            }
-        `;
-
-        const fragmentShader = `
-            uniform vec3 uColor;
-            uniform float uTime;
-            varying vec2 vUv;
-            varying vec3 vNormal;
-            varying vec3 vViewPosition;
-
-            void main() {
-                vec3 normal = normalize(vNormal);
-                vec3 viewDir = normalize(vViewPosition);
-                float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 4.5);
-                vec3 lightDir = normalize(vec3(5.0, 5.0, 4.0));
-                vec3 halfDir = normalize(lightDir + viewDir);
-                float spec = pow(max(dot(normal, halfDir), 0.0), 32.0);
-                vec3 baseColor = vec3(0.02, 0.02, 0.03);
-                vec3 reflectionColor = vec3(0.85, 0.88, 0.95);
-                vec3 finalColor = mix(baseColor, reflectionColor, fresnel * 0.6);
-                finalColor += vec3(spec * 0.4);
-                gl_FragColor = vec4(finalColor, 1.0);
-            }
-        `;
-
-        class WebGLApp {
+        // --- Stabilní a supervýkonná 3D Scéna ---
+        class WebGLScene {
             constructor() {
                 this.container = document.getElementById('canvas-container');
-                if (!this.container) return;
-                
-                this.objectsCount = 14; 
                 this.meshArray = [];
-                this.scrollProgress = 0;
                 this.mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
                 
                 this.init();
-                this.createSceneObjects();
-                this.addEventListeners();
+                this.createObjects();
+                this.addLights();
+                this.addEvents();
                 this.animate();
             }
 
             init() {
                 this.scene = new THREE.Scene();
-                this.scene.fog = new THREE.FogExp2(0x050505, 0.08);
-                this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-                this.camera.position.z = 9;
+                this.scene.background = new THREE.Color(0x050505);
+                this.scene.fog = new THREE.FogExp2(0x050505, 0.15);
 
-                this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+                this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+                this.camera.position.z = 8;
+
+                this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
                 this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                 this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-                this.renderer.toneMappingExposure = 1.2;
+                this.renderer.toneMappingExposure = 1.0;
                 this.container.appendChild(this.renderer.domElement);
 
                 this.clock = new THREE.Clock();
-
-                const ambientLight = new THREE.AmbientLight(0xffffff, 0.05);
-                this.scene.add(ambientLight);
-
-                this.spotLight = new THREE.SpotLight(0xffffff, 4, 30, Math.PI / 4, 0.5, 1);
-                this.spotLight.position.set(5, 10, 8);
-                this.scene.add(this.spotLight);
-
-                const rimLight = new THREE.DirectionalLight(0xffffff, 0.8);
-                rimLight.position.set(-5, -5, -2);
-                this.scene.add(rimLight);
             }
 
-            createSceneObjects() {
-                const geometry = new THREE.IcosahedronGeometry(0.7, 32);
-                this.shaderUniforms = {
-                    uTime: { value: 0 },
-                    uProgress: { value: 0 },
-                    uColor: { value: new THREE.Color(0x111111) }
-                };
+            createObjects() {
+                // Použijeme vestavěný uzel s jemným členěním pro dokonalé odlesky
+                const geometry = new THREE.IcosahedronGeometry(0.6, 4);
 
-                this.material = new THREE.ShaderMaterial({
-                    vertexShader: vertexShader,
-                    fragmentShader: fragmentShader,
-                    uniforms: this.shaderUniforms
+                // Nativní prémiový materiál – tekutý tmavý chrom / obsidián (vždy stabilní)
+                const material = new THREE.MeshPhysicalMaterial({
+                    color: 0x111113,
+                    metalness: 0.9,
+                    roughness: 0.1,
+                    clearcoat: 1.0,
+                    clearcoatRoughness: 0.1,
+                    reflectivity: 1.0
                 });
 
                 this.spiralGroup = new THREE.Group();
+                const count = 12;
+                const radius = 3.2;
 
-                for (let i = 0; i < this.objectsCount; i++) {
-                    const mesh = new THREE.Mesh(geometry, this.material);
+                for (let i = 0; i < count; i++) {
+                    const mesh = new THREE.Mesh(geometry, material);
+                    
+                    // Rozmístění do elegantní prostorové spirály
+                    const angle = (i / count) * Math.PI * 4; 
+                    mesh.position.x = Math.cos(angle) * radius;
+                    mesh.position.z = Math.sin(angle) * radius;
+                    mesh.position.y = (i / count) * 8 - 4;
+
                     mesh.userData = {
-                        angleOffset: (i / this.objectsCount) * Math.PI * 4,
-                        yPositionFactor: (i / this.objectsCount) - 0.5,
-                        randomScale: 0.6 + Math.random() * 0.5
+                        angleOffset: angle,
+                        yBase: mesh.position.y,
+                        speed: 0.4 + Math.random() * 0.4
                     };
+
                     this.spiralGroup.add(mesh);
                     this.meshArray.push(mesh);
                 }
+
                 this.scene.add(this.spiralGroup);
             }
 
-            addEventListeners() {
-                window.addEventListener('resize', this.onWindowResize.bind(this));
-                window.addEventListener('mousemove', this.onMouseMove.bind(this));
-                window.addEventListener('scroll', this.onScroll.bind(this));
+            addLights() {
+                // Silná studiová světla pro vytvoření luxusních kovových odlesků
+                const ambient = new THREE.AmbientLight(0xffffff, 0.1);
+                this.scene.add(ambient);
+
+                this.topLight = new THREE.DirectionalLight(0xffffff, 2.5);
+                this.topLight.position.set(5, 10, 7);
+                this.scene.add(this.topLight);
+
+                const rimLight = new THREE.DirectionalLight(0xffffff, 1.5);
+                rimLight.position.set(-5, -5, -3);
+                this.scene.add(rimLight);
+
+                const blueLight = new THREE.PointLight(0x3344ff, 2, 15);
+                blueLight.position.set(0, 0, 2);
+                this.scene.add(blueLight);
             }
 
-            onWindowResize() {
-                this.camera.aspect = window.innerWidth / window.innerHeight;
-                this.camera.updateProjectionMatrix();
-                this.renderer.setSize(window.innerWidth, window.innerHeight);
-            }
+            addEvents() {
+                window.addEventListener('resize', () => {
+                    this.camera.aspect = window.innerWidth / window.innerHeight;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+                });
 
-            onMouseMove(event) {
-                this.mouse.targetX = (event.clientX / window.innerWidth) * 2 - 1;
-                this.mouse.targetY = -(event.clientY / window.innerHeight) * 2 + 1;
-            }
-
-            onScroll() {
-                const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-                if (maxScroll <= 0) return;
-                this.scrollProgress = window.scrollY / maxScroll;
-
-                gsap.to(this.shaderUniforms.uProgress, {
-                    value: this.scrollProgress,
-                    duration: 0.8,
-                    ease: "power2.out"
+                window.addEventListener('mousemove', (e) => {
+                    this.mouse.targetX = (e.clientX / window.innerWidth) * 2 - 1;
+                    this.mouse.targetY = -(e.clientY / window.innerHeight) * 2 + 1;
                 });
             }
 
             animate() {
                 requestAnimationFrame(this.animate.bind(this));
-                const elapsedTime = this.clock.getElapsedTime();
-                this.shaderUniforms.uTime.value = elapsedTime;
+                const time = this.clock.getElapsedTime();
 
+                // Parallax efekt kamery podle myši (naprosto plynulý lerp)
                 this.mouse.x += (this.mouse.targetX - this.mouse.x) * 0.05;
                 this.mouse.y += (this.mouse.targetY - this.mouse.y) * 0.05;
-
-                this.camera.position.x = this.mouse.x * 1.5;
-                this.camera.position.y = this.mouse.y * 1.5;
+                this.camera.position.x = this.mouse.x * 2;
+                this.camera.position.y = this.mouse.y * 2;
                 this.camera.lookAt(0, 0, 0);
 
-                const spiralRadius = 3.5 + (this.mouse.x * 0.5);
-                const spiralHeight = 12.0;
+                // Pohyb a rotace objektů ve šroubovici
+                const radius = 3.2 + Math.sin(time * 0.5) * 0.3; // jemné pulzování šířky spirály
 
                 this.meshArray.forEach((mesh) => {
                     const data = mesh.userData;
-                    const currentAngle = data.angleOffset + (elapsedTime * 0.15) + (this.scrollProgress * Math.PI * 2.5);
-                    const baseHeight = data.yPositionFactor * spiralHeight;
-                    const currentHeight = baseHeight - (this.scrollProgress * spiralHeight * 0.8);
+                    const currentAngle = data.angleOffset + (time * 0.2);
 
-                    mesh.position.x = Math.cos(currentAngle) * spiralRadius;
-                    mesh.position.z = Math.sin(currentAngle) * spiralRadius;
-                    mesh.position.y = currentHeight;
+                    mesh.position.x = Math.cos(currentAngle) * radius;
+                    mesh.position.z = Math.sin(currentAngle) * radius;
+                    
+                    // Jemný vlnivý pohyb nahoru a dolů
+                    mesh.position.y = data.yBase + Math.sin(time + data.angleOffset) * 0.2;
 
-                    mesh.rotation.x = elapsedTime * 0.2 + data.angleOffset;
-                    mesh.rotation.y = elapsedTime * 0.3;
-
-                    const scaleFactor = data.randomScale * (1.0 - Math.min(Math.abs(mesh.position.z) * 0.05, 0.3));
-                    mesh.scale.set(scaleFactor, scaleFactor, scaleFactor);
+                    // Vlastní rotace každého tělesa
+                    mesh.rotation.x += 0.01 * data.speed;
+                    mesh.rotation.y += 0.015 * data.speed;
                 });
 
-                this.spiralGroup.rotation.y = -elapsedTime * 0.02;
+                this.spiralGroup.rotation.y = time * 0.02;
+
                 this.renderer.render(this.scene, this.camera);
             }
         }
 
-        // --- Samostatná a izolovaná správa audia ---
+        // --- Izolovaná a neprůstřelná správa Audia ---
         function initAudioEngine() {
             const audio = document.getElementById('bg-music');
             const btn = document.getElementById('audio-toggle');
             const btnText = document.getElementById('audio-status-text');
 
             if (!audio || !btn) return;
+            audio.volume = 0.4;
 
-            audio.volume = 0.5;
-
-            const startAudio = () => {
-                if (audio.paused && !btn.classList.contains('playing')) {
-                    audio.play().then(() => {
-                        btn.classList.add('playing');
-                        if (btnText) btnText.innerText = "Sound On";
-                    }).catch(e => console.log("Záložní start zablokován:", e));
-                }
-            };
-
-            const toggleAudio = (e) => {
-                if (e) e.stopPropagation();
+            const startPlaying = () => {
                 if (audio.paused) {
                     audio.play().then(() => {
                         btn.classList.add('playing');
                         if (btnText) btnText.innerText = "Sound On";
-                    }).catch(err => console.log("Chyba tlačítka zvuku:", err));
+                    }).catch(e => console.log("Autoplay block pass"));
+                }
+            };
+
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (audio.paused) {
+                    audio.play().then(() => {
+                        btn.classList.add('playing');
+                        if (btnText) btnText.innerText = "Sound On";
+                    }).catch(err => console.error(err));
                 } else {
                     audio.pause();
                     btn.classList.remove('playing');
                     if (btnText) btnText.innerText = "Sound Off";
                 }
-            };
+            });
 
-            btn.addEventListener('click', toggleAudio);
-            document.body.addEventListener('click', startAudio, { once: true });
+            // Spuštění hudby při prvním interaktivním kliku na plochu
+            document.body.addEventListener('click', startPlaying, { once: true });
         }
 
-        // Spuštění WebGL a Audia odděleně po načtení stránky
+        // Spustíme oba systémy nezávisle na sobě
         window.addEventListener('DOMContentLoaded', () => {
-            try {
-                new WebGLApp();
-            } catch (webGlError) {
-                console.error("WebGL se nepodařilo inicializovat:", webGlError);
-            }
-
-            try {
-                initAudioEngine();
-            } catch (audioError) {
-                console.error("Audio engine selhal:", audioError);
-            }
+            new WebGLScene();
+            initAudioEngine();
         });
     </script>
 </body>
