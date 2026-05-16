@@ -25,7 +25,7 @@
         body, html {
             width: 100%;
             height: 100%;
-            overflow: hidden;
+            overflow: hidden; /* Zajišťuje, že stránka nebude nesmyslně scrollovat dolů */
             background-color: var(--bg-color);
             font-family: 'Plus Jakarta Sans', sans-serif;
             color: var(--text-main);
@@ -256,16 +256,107 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <script>
-        // --- Stabilní a supervýkonná 3D Scéna ---
+        // --- PŮVODNÍ MATEMATICKÉ SHADERY PRO DEFORMACI (Vždy bezpečné) ---
+        const vertexShader = `
+            uniform float uTime;
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vViewPosition;
+            
+            vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}
+            vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
+            
+            float snoise(vec3 v){
+                const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
+                const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
+                vec3 i  = floor(v + dot(v, C.yyy) );
+                vec3 x0 =   v - i + dot(i, C.xxx) ;
+                vec3 g = step(x0.yzx, x0.xyz);
+                vec3 l = 1.0 - g;
+                vec3 i1 = min( g.xyz, l.zxy );
+                vec3 i2 = max( g.xyz, l.zxy );
+                vec3 x3 = x0 - D.yyy;
+                i = mod(i, 289.0 );
+                vec4 p = permute( permute( permute(
+                            i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
+                        + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
+                        + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
+                float n_ = 0.142857142857;
+                vec3  ns = n_ * D.wyz - D.xzx;
+                vec4 j = p - 49.0 * floor(p * ns.z *ns.z);
+                vec4 x_ = floor(j * ns.z);
+                vec4 y_ = floor(j - 7.0 * x_ );
+                vec4 x = x_ *ns.x + ns.yyyy;
+                vec4 y = y_ *ns.x + ns.yyyy;
+                vec4 h = 1.0 - abs(x) - abs(y);
+                vec4 b0 = vec4( x.xy, y.xy );
+                vec4 b1 = vec4( x.zw, y.zw );
+                vec4 s0 = floor(b0)*2.0 + 1.0;
+                vec4 s1 = floor(b1)*2.0 + 1.0;
+                vec4 sh = -step(h, vec4(0.0));
+                vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
+                vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;
+                vec3 p0 = vec3(a0.xy,h.x);
+                vec3 p1 = vec3(a0.zw,h.y);
+                vec3 p2 = vec3(a1.xy,h.z);
+                vec3 p3 = vec3(a1.zw,h.w);
+                vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+                p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+                vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+                m = m * m;
+                return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3) ) );
+            }
+
+            void main() {
+                vUv = uv;
+                vec3 pos = position;
+                // Matematická deformace původního objektu v čase
+                float noiseAmp = 0.35;
+                float noiseFreq = 0.8;
+                float noise = snoise(vec3(pos.x * noiseFreq, pos.y * noiseFreq + uTime * 0.3, pos.z * noiseFreq));
+                pos += normal * noise * noiseAmp;
+                
+                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                vViewPosition = -mvPosition.xyz;
+                vNormal = normalMatrix * normal;
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `;
+
+        const fragmentShader = `
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vViewPosition;
+
+            void main() {
+                vec3 normal = normalize(vNormal);
+                vec3 viewDir = normalize(vViewPosition);
+                
+                // Původní prémiový Fresnelův efekt (temný podklad s kovovým odleskem na hranách)
+                float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 4.0);
+                
+                vec3 lightDir = normalize(vec3(5.0, 5.0, 4.0));
+                vec3 halfDir = normalize(lightDir + viewDir);
+                float spec = pow(max(dot(normal, halfDir), 0.0), 16.0);
+                
+                vec3 baseColor = vec3(0.01, 0.01, 0.02);
+                vec3 reflectionColor = vec3(0.85, 0.88, 0.95);
+                
+                vec3 finalColor = mix(baseColor, reflectionColor, fresnel * 0.55);
+                finalColor += vec3(spec * 0.3);
+                
+                gl_FragColor = vec4(finalColor, 1.0);
+            }
+        `;
+
+        // --- Inicializace 3D scény ---
         class WebGLScene {
             constructor() {
                 this.container = document.getElementById('canvas-container');
-                this.meshArray = [];
                 this.mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
                 
                 this.init();
-                this.createObjects();
-                this.addLights();
+                this.createOrganicObject();
                 this.addEvents();
                 this.animate();
             }
@@ -273,76 +364,34 @@
             init() {
                 this.scene = new THREE.Scene();
                 this.scene.background = new THREE.Color(0x050505);
-                this.scene.fog = new THREE.FogExp2(0x050505, 0.15);
 
-                this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-                this.camera.position.z = 8;
+                this.camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
+                this.camera.position.z = 4.5; // Ideální vzdálenost od tekutého objektu
 
                 this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
                 this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-                this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-                this.renderer.toneMappingExposure = 1.0;
                 this.container.appendChild(this.renderer.domElement);
 
                 this.clock = new THREE.Clock();
             }
 
-            createObjects() {
-                const geometry = new THREE.IcosahedronGeometry(0.6, 4);
+            createOrganicObject() {
+                // Původní detailní sféra připravená na deformaci shaderem
+                const geometry = new THREE.IcosahedronGeometry(1.5, 64);
 
-                // Nativní prémiový materiál – tekutý tmavý chrom / obsidián (vždy stabilní)
-                const material = new THREE.MeshPhysicalMaterial({
-                    color: 0x111113,
-                    metalness: 0.9,
-                    roughness: 0.1,
-                    clearcoat: 1.0,
-                    clearcoatRoughness: 0.1,
-                    reflectivity: 1.0
+                this.uniforms = {
+                    uTime: { value: 0 }
+                };
+
+                const material = new THREE.ShaderMaterial({
+                    vertexShader: vertexShader,
+                    fragmentShader: fragmentShader,
+                    uniforms: this.uniforms
                 });
 
-                this.spiralGroup = new THREE.Group();
-                const count = 12;
-                const radius = 3.2;
-
-                for (let i = 0; i < count; i++) {
-                    const mesh = new THREE.Mesh(geometry, material);
-                    
-                    // Rozmístění do elegantní prostorové spirály
-                    const angle = (i / count) * Math.PI * 4; 
-                    mesh.position.x = Math.cos(angle) * radius;
-                    mesh.position.z = Math.sin(angle) * radius;
-                    mesh.position.y = (i / count) * 8 - 4;
-
-                    mesh.userData = {
-                        angleOffset: angle,
-                        yBase: mesh.position.y,
-                        speed: 0.4 + Math.random() * 0.4
-                    };
-
-                    this.spiralGroup.add(mesh);
-                    this.meshArray.push(mesh);
-                }
-
-                this.scene.add(this.spiralGroup);
-            }
-
-            addLights() {
-                // Silná studiová světla pro vytvoření luxusních kovových odlesků
-                const ambient = new THREE.AmbientLight(0xffffff, 0.1);
-                this.scene.add(ambient);
-
-                this.topLight = new THREE.DirectionalLight(0xffffff, 2.5);
-                this.topLight.position.set(5, 10, 7);
-                this.scene.add(this.topLight);
-
-                const rimLight = new THREE.DirectionalLight(0xffffff, 1.5);
-                rimLight.position.set(-5, -5, -3);
-                this.scene.add(rimLight);
-
-                const blueLight = new THREE.PointLight(0x3344ff, 2, 15);
-                blueLight.position.set(0, 0, 2);
-                this.scene.add(blueLight);
+                this.organicMesh = new THREE.Mesh(geometry, material);
+                this.scene.add(this.organicMesh);
             }
 
             addEvents() {
@@ -360,40 +409,28 @@
 
             animate() {
                 requestAnimationFrame(this.animate.bind(this));
+                
                 const time = this.clock.getElapsedTime();
+                this.uniforms.uTime.value = time;
 
-                // Parallax efekt kamery podle myši (naprosto plynulý lerp)
+                // Plynulé otáčení a jemná reakce pozice na myš (původní chování)
                 this.mouse.x += (this.mouse.targetX - this.mouse.x) * 0.05;
                 this.mouse.y += (this.mouse.targetY - this.mouse.y) * 0.05;
-                this.camera.position.x = this.mouse.x * 2;
-                this.camera.position.y = this.mouse.y * 2;
-                this.camera.lookAt(0, 0, 0);
 
-                // Pohyb a rotace objektů ve šroubovici
-                const radius = 3.2 + Math.sin(time * 0.5) * 0.3; // jemné pulzování šířky spirály
-
-                this.meshArray.forEach((mesh) => {
-                    const data = mesh.userData;
-                    const currentAngle = data.angleOffset + (time * 0.2);
-
-                    mesh.position.x = Math.cos(currentAngle) * radius;
-                    mesh.position.z = Math.sin(currentAngle) * radius;
+                if (this.organicMesh) {
+                    this.organicMesh.rotation.y = time * 0.15;
+                    this.organicMesh.rotation.x = time * 0.1;
                     
-                    // Jemný vlnivý pohyb nahoru a dolů
-                    mesh.position.y = data.yBase + Math.sin(time + data.angleOffset) * 0.2;
-
-                    // Vlastní rotace každého tělesa
-                    mesh.rotation.x += 0.01 * data.speed;
-                    mesh.rotation.y += 0.015 * data.speed;
-                });
-
-                this.spiralGroup.rotation.y = time * 0.02;
+                    // Jemný posun celého objektu podle pohybu kurzoru
+                    this.organicMesh.position.x = this.mouse.x * 0.4;
+                    this.organicMesh.position.y = this.mouse.y * 0.4;
+                }
 
                 this.renderer.render(this.scene, this.camera);
             }
         }
 
-        // --- Izolovaná a neprůstřelná správa Audia ---
+        // --- Samostatný audio engine oddělený od 3D kódu ---
         function initAudioEngine() {
             const audio = document.getElementById('bg-music');
             const btn = document.getElementById('audio-toggle');
@@ -407,7 +444,7 @@
                     audio.play().then(() => {
                         btn.classList.add('playing');
                         if (btnText) btnText.innerText = "Sound On";
-                    }).catch(e => console.log("Autoplay block pass"));
+                    }).catch(() => console.log("Autoplay block protection bypass"));
                 }
             };
 
@@ -425,13 +462,16 @@
                 }
             });
 
-            // Spuštění hudby při prvním interaktivním kliku na plochu
             document.body.addEventListener('click', startPlaying, { once: true });
         }
 
-        // Spustíme oba systémy nezávisle na sobě
+        // Nezávislé spuštění obou komponent
         window.addEventListener('DOMContentLoaded', () => {
-            new WebGLScene();
+            try {
+                new WebGLScene();
+            } catch (e) {
+                console.error("Chyba inicializace grafiky:", e);
+            }
             initAudioEngine();
         });
     </script>
