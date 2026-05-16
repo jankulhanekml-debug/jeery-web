@@ -263,7 +263,7 @@
                 this.mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
                 
                 this.init();
-                this.addLights(); // Přidání fyzických světel pro kovové odlesky
+                this.addLights();
                 this.createFloatingSystem();
                 this.addEvents();
                 this.animate();
@@ -272,16 +272,19 @@
             init() {
                 this.scene = new THREE.Scene();
                 this.scene.background = new THREE.Color(0x050505);
-                this.scene.fog = new THREE.FogExp2(0x050505, 0.12);
+                this.scene.fog = new THREE.FogExp2(0x050505, 0.1);
+
+                // GLOBÁLNÍ KONTENÉR: Vytvoříme skupinu, do které dáme všechny objekty
+                this.sceneGroup = new THREE.Group();
+                this.scene.add(this.sceneGroup);
 
                 this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-                this.camera.position.z = 8;
+                this.camera.position.set(0, 0, 8.5);
 
-                // Použijeme WebGLRenderer s podporou fyzikálního mapování světel
                 this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
                 this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-                this.renderer.toneMapping = THREE.ACESFilmicToneMapping; // Filmové podání světla
+                this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
                 this.renderer.toneMappingExposure = 1.2;
                 this.container.appendChild(this.renderer.domElement);
 
@@ -289,61 +292,57 @@
             }
 
             addLights() {
-                // Tlumené okolní světlo
                 const ambientLight = new THREE.AmbientLight(0x111118);
                 this.scene.add(ambientLight);
 
-                // Hlavní silné bílé světlo pro ostré odlesky hran
-                this.dirLight1 = new THREE.DirectionalLight(0xffffff, 2.5);
-                this.dirLight1.position.set(5, 5, 4);
+                // Hlavní ostré bílé světlo pro zrcadlové hrany
+                this.dirLight1 = new THREE.DirectionalLight(0xffffff, 2.8);
+                this.dirLight1.position.set(6, 6, 4);
                 this.scene.add(this.dirLight1);
 
-                // Sekundární plnící studené světlo z opačné strany
-                this.dirLight2 = new THREE.DirectionalLight(0x7788ff, 1.5);
-                this.dirLight2.position.set(-5, -3, 2);
+                // Kontrastní studené modré světlo zespodu
+                this.dirLight2 = new THREE.DirectionalLight(0x6688ff, 1.8);
+                this.dirLight2.position.set(-6, -4, 2);
                 this.scene.add(this.dirLight2);
 
-                // Jemné podsvícení zezadu (Rim light)
-                const backLight = new THREE.DirectionalLight(0xffffff, 1.0);
-                backLight.position.set(0, 0, -5);
+                // Hluboké zadní protisvětlo pro zvýraznění siluet
+                const backLight = new THREE.DirectionalLight(0xffffff, 1.2);
+                backLight.position.set(0, 0, -6);
                 this.scene.add(backLight);
             }
 
             createFloatingSystem() {
-                // Použijeme detailní Icosahedron pro nepravidelný organický tvar kapiček
                 const geometry = new THREE.IcosahedronGeometry(0.5, 3);
                 
-                // Ruční drobná deformace vrcholů geometrie, aby byl každý kus originální organická kapička
+                // Ruční organická deformace geometrie
                 const positionAttribute = geometry.attributes.position;
                 for (let i = 0; i < positionAttribute.count; i++) {
                     const x = positionAttribute.getX(i);
                     const y = positionAttribute.getY(i);
                     const z = positionAttribute.getZ(i);
-                    
-                    // Přidání nepravidelnosti na povrch
                     const noise = (Math.sin(x * 4) + Math.cos(y * 4) + Math.sin(z * 4)) * 0.08;
                     positionAttribute.setXYZ(i, x + x * noise, y + y * noise, z + z * noise);
                 }
                 geometry.computeVertexNormals();
 
-                // Fyzikální materiál s luxusním kovovým a zrcadlovým odleskem (PBR)
+                // Fyzikální ultra-reflexivní chromový materiál
                 const premiumMaterial = new THREE.MeshPhysicalMaterial({
-                    color: 0x111115,         // Temně grafitový základ
-                    metalness: 0.95,         // Téměř čistý kov
-                    roughness: 0.05,         // Maximálně vyhlazený povrch pro zrcadlový odraz
-                    clearcoat: 1.0,          // Dodatečná průhledná vrstva laku
-                    clearcoatRoughness: 0.02,
+                    color: 0x0d0d11,
+                    metalness: 0.98,
+                    roughness: 0.04,
+                    clearcoat: 1.0,
+                    clearcoatRoughness: 0.01,
                     reflectivity: 1.0
                 });
 
-                const objectCount = 18;
+                const objectCount = 20; // Mírně zvýšený počet pro plnější prostor při rotaci
                 for (let i = 0; i < objectCount; i++) {
                     const mesh = new THREE.Mesh(geometry, premiumMaterial);
                     
-                    // Výchozí nastavení pozice ve spirálové struktuře
-                    const radius = Math.random() * 3.5 + 1.5; // Vzdálenost od středu spirály
-                    const angle = Math.random() * Math.PI * 2; // Počiatoční úhel
-                    const zPos = (Math.random() - 0.5) * 8;   // Rozprostření hloubky
+                    // Kruhové rozprostření v prostoru
+                    const radius = Math.random() * 4.0 + 1.2;
+                    const angle = Math.random() * Math.PI * 2;
+                    const zPos = (Math.random() - 0.5) * 6;
                     
                     mesh.position.set(
                         Math.cos(angle) * radius,
@@ -351,20 +350,20 @@
                         zPos
                     );
 
-                    // Uložení parametrů pro pohyb do spirály do userData
                     mesh.userData = {
                         radius: radius,
                         angle: angle,
-                        spiralSpeed: (Math.random() * 0.05 + 0.02) * (Math.random() > 0.5 ? 1 : -1), // Rychlost oběhu
-                        zSpeed: (Math.random() - 0.5) * 0.3, // Rychlost stoupání/klesání v ose Z
+                        spiralSpeed: (Math.random() * 0.04 + 0.01) * (Math.random() > 0.5 ? 1 : -1),
                         rotSpeedX: Math.random() * 0.4 + 0.1,
                         rotSpeedY: Math.random() * 0.4 + 0.2,
                         seed: Math.random() * 100,
-                        baseScale: Math.random() * 0.5 + 0.5
+                        baseScale: Math.random() * 0.45 + 0.45
                     };
 
                     mesh.scale.setScalar(mesh.userData.baseScale);
-                    this.scene.add(mesh);
+                    
+                    // DŮLEŽITÉ: Objekty vkládáme do naší skupiny, ne přímo do scény
+                    this.sceneGroup.add(mesh);
                     this.floatingObjects.push(mesh);
                 }
             }
@@ -387,40 +386,42 @@
                 
                 const time = this.clock.getElapsedTime();
 
-                // Jemná reakce kamery na pohyb myši (Parallax)
+                // 1. DYNAMICKÁ ROTACE CELÉ SCÉNY KOLEM SVISLÉ OSY Y
+                // Hodnota 0.04 zajišťuje elegantní, luxusní a pomalé otáčení celého pole
+                this.sceneGroup.rotation.y = time * 0.04;
+
+                // Parallaxní reakce kamery na kurzor myši
                 this.mouse.x += (this.mouse.targetX - this.mouse.x) * 0.05;
                 this.mouse.y += (this.mouse.targetY - this.mouse.y) * 0.05;
                 
-                this.camera.position.x = this.mouse.x * 1.2;
-                this.camera.position.y = this.mouse.y * 1.2;
+                this.camera.position.x = this.mouse.x * 1.0;
+                this.camera.position.y = this.mouse.y * 1.0;
                 this.camera.lookAt(0, 0, 0);
 
-                // Pohyb světel s myší pro dynamické přelévání odlesků na objektech
+                // Pohyb světel s myší pro pohyblivé odlesky na chromu
                 if (this.dirLight1) {
-                    this.dirLight1.position.x = 5 + this.mouse.x * 3;
-                    this.dirLight1.position.y = 5 + this.mouse.y * 3;
+                    this.dirLight1.position.x = 6 + this.mouse.x * 2;
+                    this.dirLight1.position.y = 6 + this.mouse.y * 2;
                 }
 
-                // Logika plynulého spirálovitého pohybu v prostoru
+                // Vnitřní mikropohyby jednotlivých těles
                 this.floatingObjects.forEach(mesh => {
                     const data = mesh.userData;
                     
-                    // 1. Aktualizace úhlu pro rotaci kolem středu
-                    data.angle += data.spiralSpeed * 0.1; 
-                    
-                    // 2. Výpočet nové X a Y pozice na základě měnícího se úhlu (kruh/spirála)
+                    // Pomalý vnitřní oběh ve spirále
+                    data.angle += data.spiralSpeed * 0.08; 
                     mesh.position.x = Math.cos(data.angle) * data.radius;
                     mesh.position.y = Math.sin(data.angle) * data.radius;
                     
-                    // 3. Plynulý posun vpřed a vzad v prostoru (osa Z) pomocí sinusové vlny
-                    mesh.position.z += Math.sin(time * 0.2 + data.seed) * 0.004;
+                    // Jemné dýchání v hloubce prostoru (osa Z)
+                    mesh.position.z += Math.sin(time * 0.15 + data.seed) * 0.003;
 
-                    // Vlastní pomalé otáčení samotného předmětu
-                    mesh.rotation.x += 0.003 * data.rotSpeedX;
-                    mesh.rotation.y += 0.004 * data.rotSpeedY;
+                    // Rotace samotného předmětu
+                    mesh.rotation.x += 0.002 * data.rotSpeedX;
+                    mesh.rotation.y += 0.003 * data.rotSpeedY;
                     
-                    // Jemné pulzování měřítka v čase (organický efekt dýchání)
-                    const scalePulse = data.baseScale + Math.sin(time * 0.5 + data.seed) * 0.03;
+                    // Organické dýchání velikosti
+                    const scalePulse = data.baseScale + Math.sin(time * 0.4 + data.seed) * 0.025;
                     mesh.scale.setScalar(scalePulse);
                 });
 
