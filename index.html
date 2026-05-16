@@ -265,7 +265,7 @@
             void main() {
                 vec3 pos = position;
                 
-                // Matematické zvlnění povrchu (efekt tekutého organického kovu)
+                // Matematické zvlnění povrchu (organická deformace tekutého kovu)
                 float wave = sin(pos.x * 3.0 + uTime * 1.0) * cos(pos.y * 3.0 + uTime * 1.0) * sin(pos.z * 3.0 + uTime * 1.0);
                 pos += normal * wave * 0.23;
                 
@@ -277,7 +277,7 @@
             }
         `;
 
-        // --- FRAGMENT SHADER PRO ČERNÝ MATERIÁL S EXTRÉMNÍMI ODLESKY ---
+        // --- FRAGMENT SHADER: LUXUSNÍ TEMNÝ DESIGN S OSTRÝMI HRANOVÝMI ODLESKY ---
         const fragmentShader = `
             varying vec3 vNormal;
             varying vec3 vViewPosition;
@@ -286,29 +286,31 @@
                 vec3 normal = normalize(vNormal);
                 vec3 viewDir = normalize(vViewPosition);
                 
-                // HLUBOKÝ ČERNÝ ZÁKLAD (Ultra dark organický vzhled)
-                vec3 baseBlack = vec3(0.02, 0.02, 0.03); 
+                // SKUTEČNÁ ČERNÁ: Naprosto temný podklad (vzhled černého oleje / prémiového skla)
+                vec3 baseBlack = vec3(0.005, 0.005, 0.007); 
                 
-                // Pozice virtuálních světelných zdrojů
+                // Směry ostrých designových světel
                 vec3 lightDir1 = normalize(vec3(5.0, 8.0, 4.0));
-                vec3 lightDir2 = normalize(vec3(-5.0, -4.0, 4.0));
+                vec3 lightDir2 = normalize(vec3(-5.0, -4.0, 3.0));
                 
-                // Fresnelův efekt (intenzivní zrcadlová zář na vnějších siluetách kapek)
-                float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 4.5);
-                vec3 specularReflection = vec3(1.0, 1.0, 1.0) * fresnel * 0.9;
+                // Zúžený Fresnelův efekt (bílá zář se objeví POUZE na extrémních vnějších hranách)
+                // Zvýšená mocnina na 7.0 dramaticky zúží odlesk, takže vnitřek kuliček zůstane čistě černý
+                float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 7.0);
+                vec3 edgeReflection = vec3(1.0, 1.0, 1.0) * fresnel * 0.9;
                 
-                // Ostré bodové odlesky (Specular Highlights) z obou směrů světel
+                // Ostré bodové odlesky (Specular Highlights)
+                // Zvýšeno na 64.0 a 48.0 pro docílení super-ostrých zrcadlových bodů (glossy efekt)
                 vec3 halfDir1 = normalize(lightDir1 + viewDir);
-                float spec1 = pow(max(dot(normal, halfDir1), 0.0), 32.0); // Vysoké číslo = ostrý bodový odraz
+                float spec1 = pow(max(dot(normal, halfDir1), 0.0), 64.0); 
                 
                 vec3 halfDir2 = normalize(lightDir2 + viewDir);
-                float spec2 = pow(max(dot(normal, halfDir2), 0.0), 24.0);
+                float spec2 = pow(max(dot(normal, halfDir2), 0.0), 48.0);
                 
-                // Sečtení zářivých odlesků na černém podkladu
+                // Finální kompozice temného luxusního materiálu
                 vec3 finalColor = baseBlack;
-                finalColor += specularReflection;          // Přidání obrysového lesku (fresnel)
-                finalColor += vec3(spec1 * 0.85);          // Přidání hlavního ostrého odlesku
-                finalColor += vec3(spec2 * 0.4) * vec3(0.8, 0.9, 1.0); // Přidání sekundárního odlesku s lehkým studeným nádechem
+                finalColor += edgeReflection;               // Luxusní linka na obrysu
+                finalColor += vec3(spec1 * 0.9);           // Ostrý odlesk z hlavního světla
+                finalColor += vec3(spec2 * 0.35);          // Jemnější odlesk z protisvětla
                 
                 gl_FragColor = vec4(finalColor, 1.0);
             }
@@ -343,7 +345,7 @@
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
                 this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                 this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-                this.renderer.toneMappingExposure = 1.3;
+                this.renderer.toneMappingExposure = 1.2;
                 this.container.appendChild(this.renderer.domElement);
 
                 this.clock = new THREE.Clock();
