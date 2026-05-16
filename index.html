@@ -7,13 +7,13 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Plus+Jakarta+Sans:wght@300;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Plus+Jakarta+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --bg-color: #050505;
+            --bg-color: #030303;
             --text-main: #ffffff;
-            --text-muted: #888888;
+            --text-muted: #666666;
         }
 
         * {
@@ -30,6 +30,7 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
             color: var(--text-main);
             -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         #canvas-container {
@@ -41,6 +42,7 @@
             z-index: 1;
         }
 
+        /* Rafinovaný filmový šum pro high-end analogový nádech */
         .grain-overlay {
             position: fixed;
             top: 0;
@@ -48,11 +50,12 @@
             width: 100%;
             height: 100%;
             z-index: 2;
-            opacity: 0.04;
+            opacity: 0.025;
             pointer-events: none;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
         }
 
+        /* Čisté, nevtíravé luxusní UI */
         .ui-layer {
             position: absolute;
             top: 0;
@@ -67,7 +70,7 @@
         }
 
         header {
-            padding: 40px;
+            padding: 50px 60px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -75,54 +78,59 @@
 
         .nav-logo {
             font-family: 'Syncopate', sans-serif;
-            font-size: 0.9rem;
-            letter-spacing: 0.3em;
+            font-size: 0.8rem;
+            letter-spacing: 0.4em;
+            font-weight: 700;
             text-transform: uppercase;
+            opacity: 0.9;
         }
 
         .audio-control {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             color: var(--text-main);
-            padding: 10px 20px;
-            border-radius: 30px;
+            padding: 12px 24px;
+            border-radius: 40px;
             cursor: pointer;
-            font-size: 0.7rem;
-            letter-spacing: 0.2em;
+            font-size: 0.65rem;
+            font-weight: 500;
+            letter-spacing: 0.25em;
             text-transform: uppercase;
             display: flex;
             align-items: center;
-            gap: 10px;
-            transition: all 0.3s ease;
+            gap: 12px;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             pointer-events: auto;
         }
 
         .audio-control:hover {
             background: var(--text-main);
             color: var(--bg-color);
+            border-color: var(--text-main);
         }
 
         .audio-waves {
             display: flex;
             align-items: flex-end;
-            gap: 2px;
+            gap: 3px;
             width: 16px;
-            height: 12px;
+            height: 10px;
         }
 
         .wave-bar {
-            width: 2px;
-            height: 3px;
+            width: 1.5px;
+            height: 2px;
             background: currentColor;
+            transition: height 0.3s ease;
         }
 
         .audio-control.playing .wave-bar {
-            animation: soundWave 1.2s infinite ease-in-out;
+            animation: soundWave 1s infinite ease-in-out;
         }
-        .audio-control.playing .wave-bar:nth-child(2) { animation-delay: 0.2s; }
-        .audio-control.playing .wave-bar:nth-child(3) { animation-delay: 0.4s; }
+        .audio-control.playing .wave-bar:nth-child(2) { animation-delay: 0.15s; }
+        .audio-control.playing .wave-bar:nth-child(3) { animation-delay: 0.3s; }
 
         .hero {
             flex-grow: 1;
@@ -135,74 +143,78 @@
         }
 
         .hero-title-container {
-            margin-bottom: 30px;
+            margin-bottom: 40px;
         }
 
         .hero-title {
             font-family: 'Syncopate', sans-serif;
-            font-size: clamp(3.5rem, 12vw, 9rem);
+            font-size: clamp(4rem, 14vw, 10rem);
             font-weight: 700;
-            letter-spacing: -0.03em;
-            line-height: 0.9;
+            letter-spacing: -0.04em;
+            line-height: 0.85;
             text-transform: uppercase;
-            background: linear-gradient(180deg, #ffffff 30%, #a3a3a3 100%);
+            background: linear-gradient(180deg, #ffffff 40%, #777777 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             user-select: none;
+            filter: drop-shadow(0 10px 30px rgba(0,0,0,0.5));
         }
 
         .soundcloud-btn {
             pointer-events: auto;
             display: inline-flex;
             align-items: center;
-            gap: 12px;
-            padding: 16px 36px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            gap: 14px;
+            padding: 18px 40px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.01);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             color: var(--text-main);
             text-decoration: none;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: 500;
-            letter-spacing: 0.2em;
+            letter-spacing: 0.25em;
             text-transform: uppercase;
             border-radius: 50px;
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
         }
 
         .soundcloud-btn:hover {
             background: var(--text-main);
             color: var(--bg-color);
-            transform: translateY(-2px);
+            border-color: var(--text-main);
+            transform: translateY(-3px);
+            box-shadow: 0 30px 50px rgba(0, 0, 0, 0.8);
         }
 
         .soundcloud-btn svg {
-            width: 16px;
-            height: 16px;
+            width: 14px;
+            height: 14px;
             fill: currentColor;
         }
 
         footer {
-            padding: 40px;
+            padding: 50px 60px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 0.75rem;
-            letter-spacing: 0.1em;
+            font-size: 0.65rem;
+            font-weight: 400;
+            letter-spacing: 0.15em;
             color: var(--text-muted);
         }
 
         @keyframes soundWave {
-            0% { height: 3px; }
-            50% { height: 12px; }
-            100% { height: 3px; }
+            0% { height: 2px; }
+            50% { height: 10px; }
+            100% { height: 2px; }
         }
 
         @media (max-width: 768px) {
-            header { padding: 24px; }
-            footer { padding: 24px; flex-direction: column; gap: 12px; text-align: center; }
+            header { padding: 30px 24px; }
+            footer { padding: 30px 24px; flex-direction: column; gap: 16px; text-align: center; }
         }
     </style>
 </head>
@@ -244,15 +256,15 @@
         </section>
 
         <footer>
-            <div>&copy; 2026 JEERY. ALL RIGHTS RESERVED.</div>
-            <div>DESIGNED FOR PEAK AUDIO/VISUAL FIDELITY</div>
+            <div>&copy; 2026 JEERY. CORE STUDIO RESIDENCY.</div>
+            <div>VISUAL ENGAGEMENT FOR HIGH-FIDELITY DISCOVERY</div>
         </footer>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <script>
-        // --- SHADER PRO ATMOSFÉRICKÉ POZADÍ (Světlo vyvěrající z hlubin) ---
+        // --- LUXUSNÍ ATMOSFÉRICKÉ POZADÍ (Hlubinná ambientní mlhovina) ---
         const bgVertexShader = `
             varying vec2 vUv;
             void main() {
@@ -266,28 +278,24 @@
             uniform float uTime;
 
             void main() {
-                // Převod na středové souřadnice (-1 až 1)
                 vec2 uv = vUv * 2.0 - 1.0;
-                
-                // Výpočet vzdálenosti od středu pro radiální záři
                 float dist = length(uv);
                 
-                // Dynamická jemná pulzace hlubokého světla
-                float pulse = sin(uTime * 0.4) * 0.04 + 0.96;
+                // Hypnotická, velmi zpomalená mikropulzace světla
+                float pulse = sin(uTime * 0.25) * 0.03 + 0.97;
                 
-                // Definice barev hlubokého prostoru (Temně šedá pro hloubku, lehký nádech klubové zeleně a modři)
-                vec3 spaceCore = vec3(0.04, 0.08, 0.06) * pulse; // Středové vyvěrající světlo z hlubin
-                vec3 spaceVoid = vec3(0.01, 0.01, 0.012);        // Temný nekonečný okraj vesmíru
+                // Precizně kalibrované barvy hlubokého klubového vizuálu
+                vec3 spaceCore = vec3(0.025, 0.065, 0.045) * pulse; 
+                vec3 spaceVoid = vec3(0.004, 0.004, 0.005);       
                 
-                // Vytvoření jemného, hlubokého ambientního gradientu
-                float glow = smoothstep(1.8, 0.0, dist);
+                float glow = smoothstep(1.6, 0.1, dist);
                 vec3 finalBg = mix(spaceVoid, spaceCore, glow);
                 
                 gl_FragColor = vec4(finalBg, 1.0);
             }
         `;
 
-        // --- ORGANICKÝ VERTEX SHADER PRO GEOMETRII ---
+        // --- MASTER VERTEX SHADER (Ultra hladká organická re-distribuce bodů) ---
         const vertexShader = `
             uniform float uTime;
             varying vec3 vNormal;
@@ -296,8 +304,11 @@
             void main() {
                 vec3 pos = position;
                 
-                float wave = sin(pos.x * 3.0 + uTime * 1.0) * cos(pos.y * 3.0 + uTime * 1.0) * sin(pos.z * 3.0 + uTime * 1.0);
-                pos += normal * wave * 0.20;
+                // Kombinace harmonických vln pro organický, nepravidelný pohyb (fluidní mikrodynamika)
+                float wave = sin(pos.x * 2.5 + uTime * 0.7) * cos(pos.y * 2.5 + uTime * 0.6) * sin(pos.z * 2.5 + uTime * 0.5);
+                             
+                // Decentnější amplituda (0.15 místo 0.23) zajišťuje špičkový kontrolovaný design
+                pos += normal * wave * 0.15;
                 
                 vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
                 vViewPosition = -mvPosition.xyz;
@@ -307,42 +318,48 @@
             }
         `;
 
-        // --- FRAGMENT SHADER PRO GEOMETRII OBJEKTŮ ---
+        // --- MASTER FRAGMENT SHADER (Materiál s fyzikální mikrodrsností / Anisotropic design) ---
         const fragmentShader = `
             varying vec3 vNormal;
             varying vec3 vViewPosition;
-            uniform int uMaterialType; // 0 = Stříbřitý, 1 = Temně zelený
+            uniform int uMaterialType; // 0 = Tekuté platinové stříbro, 1 = Temný smaragdový latex
 
             void main() {
                 vec3 normal = normalize(vNormal);
                 vec3 viewDir = normalize(vViewPosition);
                 
-                // Hluboký temný podklad objektů
-                vec3 baseBlack = vec3(0.005, 0.005, 0.007); 
+                // Hluboký, neodráživý černý absorbční základ
+                vec3 baseBlack = vec3(0.002, 0.002, 0.003); 
                 
-                vec3 lightDir1 = normalize(vec3(5.0, 8.0, 4.0));
-                vec3 lightDir2 = normalize(vec3(-5.0, -4.0, 3.0));
+                // Studio Light Rig (3-bodové precizní nasvícení scény)
+                vec3 lightDir1 = normalize(vec3(6.0, 10.0, 5.0));
+                vec3 lightDir2 = normalize(vec3(-6.0, -5.0, 4.0));
+                vec3 lightDir3 = normalize(vec3(0.0, 0.0, 1.0)); // Přímé ambientní protisvětlo
                 
                 vec3 reflectColor = vec3(1.0, 1.0, 1.0);
                 if(uMaterialType == 1) {
-                    reflectColor = vec3(0.0, 0.5, 0.15); // Designová zelená
+                    reflectColor = vec3(0.01, 0.45, 0.12); // Sametově temná luxusní zelená
                 }
                 
-                // Ostré ohraničení hran (Fresnel)
-                float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 7.0);
-                vec3 edgeReflection = reflectColor * fresnel * 0.95;
+                // Extrémně sofistikovaný Fresnelův okrajový přechod (Falloff) pro čisté kontury
+                float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 8.5);
+                vec3 edgeReflection = reflectColor * fresnel * 0.85;
                 
-                // Specular odlesky
+                // Fyzikálně vyvážené zrcadlové odlesky s vysokou hodnotou roughness simulace (64.0 - 90.0)
                 vec3 halfDir1 = normalize(lightDir1 + viewDir);
-                float spec1 = pow(max(dot(normal, halfDir1), 0.0), 64.0); 
+                float spec1 = pow(max(dot(normal, halfDir1), 0.0), 90.0); 
                 
                 vec3 halfDir2 = normalize(lightDir2 + viewDir);
-                float spec2 = pow(max(dot(normal, halfDir2), 0.0), 48.0);
+                float spec2 = pow(max(dot(normal, halfDir2), 0.0), 64.0);
                 
+                float spec3 = pow(max(dot(normal, lightDir3), 0.0), 32.0);
+                
+                // Kompozice master vrstvy materiálu
                 vec3 finalColor = baseBlack;
                 finalColor += edgeReflection;
-                finalColor += reflectColor * (spec1 * 0.9);
-                finalColor += reflectColor * (spec2 * 0.35);
+                finalColor += reflectColor * (spec1 * 0.95);
+                finalColor += reflectColor * (spec2 * 0.30);
+                finalColor += reflectColor * (spec3 * 0.08); // Velmi jemné čelní zrcadlení
                 
                 gl_FragColor = vec4(finalColor, 1.0);
             }
@@ -355,7 +372,7 @@
                 this.mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
                 
                 this.init();
-                this.createBackgroundSpace(); // Inicializace hlubokého prostoru pozadí
+                this.createBackgroundSpace();
                 this.createFloatingSystem();
                 this.addEvents();
                 this.animate();
@@ -364,49 +381,49 @@
             init() {
                 this.scene = new THREE.Scene();
                 
-                // Jemná mlha přizpůsobená vyvěrajícímu světlu pozadí
-                this.scene.fog = new THREE.FogExp2(0x010403, 0.08);
+                // Luxusní filmová studiová mlha
+                this.scene.fog = new THREE.FogExp2(0x000201, 0.075);
 
                 this.sceneGroup = new THREE.Group();
                 this.scene.add(this.sceneGroup);
 
-                this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-                this.camera.position.z = 8.5;
+                this.camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
+                this.camera.position.z = 9.0;
 
-                this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+                this.renderer = new THREE.WebGLRenderer({ 
+                    antialias: true, 
+                    powerPreference: "high-performance",
+                    alpha: false
+                });
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Retina/4K optimalizace
                 this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-                this.renderer.toneMappingExposure = 1.2;
+                this.renderer.toneMappingExposure = 1.15;
                 this.container.appendChild(this.renderer.domElement);
 
                 this.clock = new THREE.Clock();
             }
 
             createBackgroundSpace() {
-                // Vytvoření plošného shaderu, který se vykresluje přímo za všemi objekty v nekonečnu
-                this.bgUniforms = {
-                    uTime: { value: 0 }
-                };
+                this.bgUniforms = { uTime: { value: 0 } };
 
                 const bgMaterial = new THREE.ShaderMaterial({
                     vertexShader: bgVertexShader,
                     fragmentShader: bgFragmentShader,
                     uniforms: this.bgUniforms,
-                    depthWrite: false // Pozadí se neplete do výpočtu hloubky 3D prvků
+                    depthWrite: false
                 });
 
                 const bgQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), bgMaterial);
-                
-                // Vytvoření dedikované scény pro pozadí, která se vykreslí jako první
                 this.bgScene = new THREE.Scene();
                 this.bgCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
                 this.bgScene.add(bgQuad);
             }
 
             createFloatingSystem() {
-                const sphereGeo = new THREE.IcosahedronGeometry(0.5, 24);
-                const torusGeo = new THREE.TorusGeometry(0.4, 0.18, 16, 48);
+                // EXTRÉMNÍ VYHLAZENÍ (64 segmentů) - Odstraňuje jakékoli viditelné polygony a zubatost tvarů
+                const sphereGeo = new THREE.IcosahedronGeometry(0.5, 64);
+                const torusGeo = new THREE.TorusGeometry(0.42, 0.16, 32, 96);
 
                 this.uniforms = { uTime: { value: 0 } };
 
@@ -422,7 +439,7 @@
                     uniforms: { uTime: this.uniforms.uTime, uMaterialType: { value: 1 } }
                 });
 
-                const countPerType = 14;
+                const countPerType = 13;
 
                 for (let i = 0; i < countPerType; i++) {
                     this.addObjectToScene(sphereGeo, silverMat);
@@ -436,9 +453,9 @@
             addObjectToScene(geometry, material) {
                 const mesh = new THREE.Mesh(geometry, material);
                 
-                const radius = Math.random() * 4.0 + 1.2;
+                const radius = Math.random() * 4.2 + 1.0;
                 const angle = Math.random() * Math.PI * 2;
-                const zPos = (Math.random() - 0.5) * 6;
+                const zPos = (Math.random() - 0.5) * 6.5;
                 
                 mesh.position.set(
                     Math.cos(angle) * radius,
@@ -449,15 +466,15 @@
                 mesh.userData = {
                     radius: radius,
                     angle: angle,
-                    spiralSpeed: (Math.random() * 0.04 + 0.01) * (Math.random() > 0.5 ? 1 : -1),
-                    rotSpeedX: Math.random() * 0.5 + 0.2,
-                    rotSpeedY: Math.random() * 0.5 + 0.2,
+                    // Zpomalený, elegantnější pohyb pro vysoce designový feeling
+                    spiralSpeed: (Math.random() * 0.025 + 0.008) * (Math.random() > 0.5 ? 1 : -1),
+                    rotSpeedX: Math.random() * 0.3 + 0.1,
+                    rotSpeedY: Math.random() * 0.3 + 0.1,
                     seed: Math.random() * 100,
-                    baseScale: Math.random() * 0.5 + 0.45
+                    baseScale: Math.random() * 0.5 + 0.4
                 };
 
                 mesh.scale.setScalar(mesh.userData.baseScale);
-                
                 this.sceneGroup.add(mesh);
                 this.floatingObjects.push(mesh);
             }
@@ -470,6 +487,7 @@
                 });
 
                 window.addEventListener('mousemove', (e) => {
+                    // Ultra-hladký parallax (zjemněný koeficient posunu)
                     this.mouse.targetX = (e.clientX / window.innerWidth) * 2 - 1;
                     this.mouse.targetY = -(e.clientY / window.innerHeight) * 2 + 1;
                 });
@@ -480,39 +498,41 @@
                 
                 const time = this.clock.getElapsedTime();
                 this.uniforms.uTime.value = time;
-                this.bgUniforms.uTime.value = time; // Posílání času do shaderu pozadí
+                this.bgUniforms.uTime.value = time;
 
-                this.sceneGroup.rotation.y = time * 0.035;
+                // Velmi majestátní, téměř neznatelná rotace celého vesmíru pozadí
+                this.sceneGroup.rotation.y = time * 0.02;
 
-                this.mouse.x += (this.mouse.targetX - this.mouse.x) * 0.05;
-                this.mouse.y += (this.mouse.targetY - this.mouse.y) * 0.05;
+                // Vysoce plynulé tlumení pohybu myši (Lerp) pro filmový efekt setrvačnosti kamery
+                this.mouse.x += (this.mouse.targetX - this.mouse.x) * 0.035;
+                this.mouse.y += (this.mouse.targetY - this.mouse.y) * 0.035;
                 
-                this.camera.position.x = this.mouse.x * 0.9;
-                this.camera.position.y = this.mouse.y * 0.9;
+                this.camera.position.x = this.mouse.x * 0.7;
+                this.camera.position.y = this.mouse.y * 0.7;
                 this.camera.lookAt(0, 0, 0);
 
                 this.floatingObjects.forEach(mesh => {
                     const data = mesh.userData;
                     
-                    data.angle += data.spiralSpeed * 0.08; 
+                    data.angle += data.spiralSpeed * 0.05; 
                     mesh.position.x = Math.cos(data.angle) * data.radius;
                     mesh.position.y = Math.sin(data.angle) * data.radius;
                     
-                    mesh.position.z += Math.sin(time * 0.15 + data.seed) * 0.003;
+                    mesh.position.z += Math.sin(time * 0.12 + data.seed) * 0.002;
 
-                    mesh.rotation.x += 0.002 * data.rotSpeedX;
-                    mesh.rotation.y += 0.003 * data.rotSpeedY;
+                    mesh.rotation.x += 0.001 * data.rotSpeedX;
+                    mesh.rotation.y += 0.0015 * data.rotSpeedY;
                     
-                    const scalePulse = data.baseScale + Math.sin(time * 0.4 + data.seed) * 0.025;
+                    // Mikro-pulzování velikosti (organický nádech dýchání objektu)
+                    const scalePulse = data.baseScale + Math.sin(time * 0.3 + data.seed) * 0.015;
                     mesh.scale.setScalar(scalePulse);
                 });
 
-                // Dvojitý render pas pro dokonalé vrstvení
                 this.renderer.autoClear = false;
                 this.renderer.clear();
                 
-                this.renderer.render(this.bgScene, this.bgCamera); // 1. Vykreslení hlubokého pozadí
-                this.renderer.render(this.scene, this.camera);     // 2. Vykreslení 3D objektů na pozadí
+                this.renderer.render(this.bgScene, this.bgCamera);
+                this.renderer.render(this.scene, this.camera);
             }
         }
 
@@ -522,14 +542,14 @@
             const btnText = document.getElementById('audio-status-text');
 
             if (!audio || !btn) return;
-            audio.volume = 0.4;
+            audio.volume = 0.35; // Komfortnější studiová hlasitost
 
             const startPlaying = () => {
                 if (audio.paused) {
                     audio.play().then(() => {
                         btn.classList.add('playing');
                         if (btnText) btnText.innerText = "Sound On";
-                    }).catch(() => console.log("Autoplay block pass"));
+                    }).catch(() => console.log("Autoplay context secure"));
                 }
             };
 
@@ -554,7 +574,7 @@
             try {
                 new WebGLScene();
             } catch (e) {
-                console.error("3D subsystém selhal:", e);
+                console.error("WebGL master pipeline error:", e);
             }
             initAudioEngine();
         });
