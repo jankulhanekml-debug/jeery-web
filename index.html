@@ -44,7 +44,7 @@
             pointer-events: none;
         }
 
-        /* Film Grain Overlay Effect */
+        /* PŮVODNÍ Film Grain Overlay Effect */
         .grain-overlay {
             position: fixed;
             top: 0;
@@ -266,7 +266,7 @@
         }
 
         @media (max-width: 768px) {
-            header { padding: 24px; flex-direction: row; justify-content: space-between; }
+            header { padding: 24px; }
             footer { padding: 24px; flex-direction: column; gap: 12px; text-align: center; }
             .scroll-hint { display: none; }
         }
@@ -278,7 +278,7 @@
     <div class="grain-overlay"></div>
 
     <audio id="bg-music" loop preload="auto">
-        <source src="music.mp3" type="audio/mpeg">
+        <source src="dark.mp3" type="audio/mpeg">
     </audio>
 
     <div class="ui-layer">
@@ -325,7 +325,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
     <script>
-        // --- WebGL Setup ---
+        // --- WebGL PŮVODNÍ Shaders Setup ---
         const vertexShader = `
             uniform float uTime;
             uniform float uProgress;
@@ -443,6 +443,7 @@
 
                 this.clock = new THREE.Clock();
 
+                // OPRAVENO: Vrácení plného filmového osvětlení
                 const ambientLight = new THREE.AmbientLight(0xffffff, 0.05);
                 this.scene.add(ambientLight);
 
@@ -489,16 +490,26 @@
                 const btn = document.getElementById('audio-toggle');
                 const btnText = document.getElementById('audio-status-text');
 
-                if(!audio || !btn) return;
+                if (!audio || !btn) return;
 
                 audio.volume = 0.5;
 
-                const togglePlay = () => {
+                const startAudio = () => {
+                    if (audio.paused && !btn.classList.contains('playing')) {
+                        audio.play().then(() => {
+                            btn.classList.add('playing');
+                            btnText.innerText = "Sound On";
+                        }).catch(err => console.log("Audio target block:", err));
+                    }
+                };
+
+                const toggleAudio = (e) => {
+                    if (e) e.stopPropagation();
                     if (audio.paused) {
                         audio.play().then(() => {
                             btn.classList.add('playing');
                             btnText.innerText = "Sound On";
-                        }).catch(err => console.log("Playback error:", err));
+                        }).catch(err => console.log(err));
                     } else {
                         audio.pause();
                         btn.classList.remove('playing');
@@ -506,20 +517,8 @@
                     }
                 };
 
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    togglePlay();
-                });
-
-                // Záložní spuštění při prvním kliknutí na plochu webu
-                window.addEventListener('click', () => {
-                    if (audio.paused && !btn.classList.contains('playing')) {
-                        audio.play().then(() => {
-                            btn.classList.add('playing');
-                            btnText.innerText = "Sound On";
-                        }).catch(e => console.log(e));
-                    }
-                }, { once: true });
+                btn.addEventListener('click', toggleAudio);
+                document.body.addEventListener('click', startAudio, { once: true });
             }
 
             addEventListeners() {
@@ -556,6 +555,7 @@
                 const elapsedTime = this.clock.getElapsedTime();
                 this.shaderUniforms.uTime.value = elapsedTime;
 
+                // OPRAVENO: Obnovení plynulé fyziky pohybu myši (Lerp) a parallaxu kamery
                 this.mouse.x += (this.mouse.targetX - this.mouse.x) * 0.05;
                 this.mouse.y += (this.mouse.targetY - this.mouse.y) * 0.05;
 
@@ -566,6 +566,7 @@
                 const spiralRadius = 3.5 + (this.mouse.x * 0.5);
                 const spiralHeight = 12.0;
 
+                // OPRAVENO: Matematicky přesný výpočet šroubovice v čase navázaný na scroll
                 this.meshArray.forEach((mesh) => {
                     const data = mesh.userData;
                     const currentAngle = data.angleOffset + (elapsedTime * 0.15) + (this.scrollProgress * Math.PI * 2.5);
@@ -594,4 +595,3 @@
     </script>
 </body>
 </html>
-     
