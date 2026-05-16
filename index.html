@@ -256,6 +256,72 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <script>
+        // --- PROVĚŘENÝ A SKVĚLE OSVĚTLENÝ CUSTOM SHADER ---
+        const vertexShader = `
+            uniform float uTime;
+            varying vec3 vNormal;
+            varying vec3 vViewPosition;
+            varying vec3 vWorldPosition;
+
+            void main() {
+                vec3 pos = position;
+                
+                // Organická tekutá deformace geometrie (původní oblíbený tvar)
+                float wave = sin(pos.x * 2.5 + uTime * 1.2) * cos(pos.y * 2.5 + uTime * 1.2) * sin(pos.z * 2.5 + uTime * 1.2);
+                pos += normal * wave * 0.25;
+                
+                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                vViewPosition = -mvPosition.xyz;
+                vNormal = normalMatrix * normal;
+                
+                vec4 worldPos = modelMatrix * vec4(pos, 1.0);
+                vWorldPosition = worldPos.xyz;
+                
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `;
+
+        const fragmentShader = `
+            varying vec3 vNormal;
+            varying vec3 vViewPosition;
+            varying vec3 vWorldPosition;
+            uniform vec3 uMousePos;
+
+            void main() {
+                vec3 normal = normalize(vNormal);
+                vec3 viewDir = normalize(vViewPosition);
+                
+                // POKROČILÉ VNITŘNÍ NASVÍCENÍ SHADERU (Prosvětlení stínů)
+                // Základní světlejší tón stříbrného chromu namísto černé
+                vec3 ambientColor = vec3(0.22, 0.24, 0.32); 
+                
+                // Silné fiktivní bodové světlo shora pro jasné odlesky
+                vec3 lightDir1 = normalize(vec3(5.0, 8.0, 5.0));
+                float diff1 = max(dot(normal, lightDir1), 0.0);
+                
+                // Kontrastní spodní světlo (vyplňuje spodní tmavé části)
+                vec3 lightDir2 = normalize(vec3(-5.0, -6.0, 2.0));
+                float diff2 = max(dot(normal, lightDir2), 0.0);
+                
+                // Fresnelův efekt (intenzivní lesk na vnějších hranách)
+                float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 3.0);
+                
+                // Výpočet odlesků (Specular highlights)
+                vec3 halfDir = normalize(lightDir1 + viewDir);
+                float spec = pow(max(dot(normal, halfDir), 0.0), 16.0);
+                
+                // Složení finální barvy s důrazem na maximální prosvětlení
+                vec3 baseMeshColor = ambientColor + (diff1 * vec3(0.6, 0.6, 0.65)) + (diff2 * vec3(0.3, 0.35, 0.5));
+                vec3 reflectionColor = vec3(0.95, 0.97, 1.0); // Zrcadlově bílá zář
+                
+                vec3 finalColor = mix(baseMeshColor, reflectionColor, fresnel * 0.75);
+                finalColor += vec3(spec * 0.6); // Přidání ostrého odlesku
+                
+                gl_FragColor = vec4(finalColor, 1.0);
+            }
+        `;
+
+        // --- Inicializace scény ---
         class WebGLScene {
             constructor() {
                 this.container = document.getElementById('canvas-container');
@@ -263,7 +329,6 @@
                 this.mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
                 
                 this.init();
-                this.addLights(); // Zesílená světelná konfigurace
                 this.createFloatingSystem();
                 this.addEvents();
                 this.animate();
@@ -272,81 +337,45 @@
             init() {
                 this.scene = new THREE.Scene();
                 this.scene.background = new THREE.Color(0x050505);
-                
-                // Mírně ztlumená mlha, aby nesežrala jas objektů v dálce
-                this.scene.fog = new THREE.FogExp2(0x050505, 0.08);
+                this.scene.fog = new THREE.FogExp2(0x050505, 0.07);
 
+                // GLOBÁLNÍ SKUPINA PRO ROTACI POZADÍ
                 this.sceneGroup = new THREE.Group();
                 this.scene.add(this.sceneGroup);
 
                 this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-                this.camera.position.set(0, 0, 8.5);
+                this.camera.position.z = 8.5;
 
                 this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
                 this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                 this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-                this.renderer.toneMappingExposure = 1.5; // Zvýšená celková expozice pro jasnější scénu
+                this.renderer.toneMappingExposure = 1.4;
                 this.container.appendChild(this.renderer.domElement);
 
                 this.clock = new THREE.Clock();
             }
 
-            addLights() {
-                // 1. VÝRAZNĚ POSÍLENÉ OKOLNÍ SVĚTLO (prosvětlí tmavé stíny ze všech stran)
-                const ambientLight = new THREE.AmbientLight(0x333344, 1.5);
-                this.scene.add(ambientLight);
-
-                // 2. HLAVNÍ ČELNÍ SVĚTLO - Extrémní intenzita pro jasné odlesky
-                this.dirLight1 = new THREE.DirectionalLight(0xffffff, 4.5);
-                this.dirLight1.position.set(6, 6, 5);
-                this.scene.add(this.dirLight1);
-
-                // 3. SEKUNDÁRNÍ SVĚTLO - Studený bílý tón, prosvětluje spodní hrany
-                this.dirLight2 = new THREE.DirectionalLight(0xddeeff, 3.0);
-                this.dirLight2.position.set(-6, -4, 3);
-                this.scene.add(this.dirLight2);
-
-                // 4. EXTRA BOČNÍ SVĚTLO - Aby objekty neztrácely jas při rotaci z boku
-                const sideLight = new THREE.DirectionalLight(0xffffff, 2.0);
-                sideLight.position.set(6, -2, -2);
-                this.scene.add(sideLight);
-
-                // 5. ZADNÍ PROTISVĚTLO (Rim light) - Vytváří zářící obrys objektů
-                const backLight = new THREE.DirectionalLight(0xffffff, 2.5);
-                backLight.position.set(0, 0, -6);
-                this.scene.add(backLight);
-            }
-
             createFloatingSystem() {
-                const geometry = new THREE.IcosahedronGeometry(0.5, 3);
-                
-                // Ruční organická deformace geometrie
-                const positionAttribute = geometry.attributes.position;
-                for (let i = 0; i < positionAttribute.count; i++) {
-                    const x = positionAttribute.getX(i);
-                    const y = positionAttribute.getY(i);
-                    const z = positionAttribute.getZ(i);
-                    const noise = (Math.sin(x * 4) + Math.cos(y * 4) + Math.sin(z * 4)) * 0.08;
-                    positionAttribute.setXYZ(i, x + x * noise, y + y * noise, z + z * noise);
-                }
-                geometry.computeVertexNormals();
+                // Použijeme detailní Icosahedron, aby deformace ze shaderu byla dokonale hladká
+                const geometry = new THREE.IcosahedronGeometry(0.5, 24);
 
-                // ROZZÁŘENÝ CHROMOVÝ MATERIÁL
-                const premiumMaterial = new THREE.MeshPhysicalMaterial({
-                    color: 0x555566,         // Výrazně zesvětlená základní barva (ze skoro černé na stříbrno-šedou)
-                    metalness: 0.9,          // Vysoce reflexní kovový povrch
-                    roughness: 0.1,          // Mírně zvýšený rozptyl světla, aby objekty "zářily" jasněji na větší ploše
-                    clearcoat: 1.0,          // Luxusní vnější lesklý lak
-                    clearcoatRoughness: 0.02,
-                    reflectivity: 1.0
+                this.uniforms = {
+                    uTime: { value: 0 },
+                    uMousePos: { value: new THREE.Vector3(0, 0, 0) }
+                };
+
+                const shaderMaterial = new THREE.ShaderMaterial({
+                    vertexShader: vertexShader,
+                    fragmentShader: fragmentShader,
+                    uniforms: this.uniforms
                 });
 
                 const objectCount = 20;
                 for (let i = 0; i < objectCount; i++) {
-                    const mesh = new THREE.Mesh(geometry, premiumMaterial);
+                    const mesh = new THREE.Mesh(geometry, shaderMaterial);
                     
-                    const radius = Math.random() * 4.0 + 1.2;
+                    const radius = Math.random() * 3.8 + 1.2;
                     const angle = Math.random() * Math.PI * 2;
                     const zPos = (Math.random() - 0.5) * 6;
                     
@@ -363,11 +392,12 @@
                         rotSpeedX: Math.random() * 0.4 + 0.1,
                         rotSpeedY: Math.random() * 0.4 + 0.2,
                         seed: Math.random() * 100,
-                        baseScale: Math.random() * 0.45 + 0.45
+                        baseScale: Math.random() * 0.5 + 0.5
                     };
 
                     mesh.scale.setScalar(mesh.userData.baseScale);
                     
+                    // Objekty dáváme do rotující skupiny
                     this.sceneGroup.add(mesh);
                     this.floatingObjects.push(mesh);
                 }
@@ -390,11 +420,12 @@
                 requestAnimationFrame(this.animate.bind(this));
                 
                 const time = this.clock.getElapsedTime();
+                this.uniforms.uTime.value = time;
 
-                // Plynulá rotace celé scény kolem osy Y
+                // POMALÁ GLOBÁLNÍ ROTACE POZADÍ KOLEM SVISLÉ OSY Y
                 this.sceneGroup.rotation.y = time * 0.04;
 
-                // Parallaxní reakce kamery na kurzor myši
+                // Parallaxní efekt podle myši
                 this.mouse.x += (this.mouse.targetX - this.mouse.x) * 0.05;
                 this.mouse.y += (this.mouse.targetY - this.mouse.y) * 0.05;
                 
@@ -402,13 +433,9 @@
                 this.camera.position.y = this.mouse.y * 1.0;
                 this.camera.lookAt(0, 0, 0);
 
-                // Dynamický pohyb světel podle myši pro živé odlesky
-                if (this.dirLight1) {
-                    this.dirLight1.position.x = 6 + this.mouse.x * 2;
-                    this.dirLight1.position.y = 6 + this.mouse.y * 2;
-                }
+                this.uniforms.uMousePos.value.set(this.mouse.x, this.mouse.y, 0);
 
-                // Vnitřní mikropohyby jednotlivých těles ve spirále
+                // Spirálové vznášení v prostoru
                 this.floatingObjects.forEach(mesh => {
                     const data = mesh.userData;
                     
