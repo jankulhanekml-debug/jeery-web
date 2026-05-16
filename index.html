@@ -583,15 +583,14 @@
             new WebGLApp();
         });
     </script>
-// Luxusní spuštění hudby po prvním kliknutí uživatele na web
 window.addEventListener('click', () => {
     const audio = document.getElementById('bg-music');
     if (audio && audio.paused) {
         audio.play().catch(error => {
             console.log("Přehrávání bylo blokováno prohlížečem:", error);
         });
-        audio.volume = 0.5; // Nastavení hlasitosti na příjemných 50 %
+        audio.volume = 0.5;
     }
-}, { once: true }); // { once: true } zajistí, že se skript spustí jen při prvním kliknutí    
+}, { once: true }); // { once: true }   
 </body>
 </html>
