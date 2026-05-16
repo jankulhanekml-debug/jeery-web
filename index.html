@@ -354,7 +354,7 @@
                     <div class="contact-grid">
                         <div class="contact-item">
                             <span class="contact-label">Management & Booking</span>
-                            <span class="contact-value"><a href="mailto:info@jeery.audio">info@jeery.audio</a></span>
+                            <span class="contact-value"><a href="mailto:jan.kulhanek.ml@gmail.com">jan.kulhanek.ml@gmail.com</a></span>
                         </div>
                         <div class="contact-item">
                             <span class="contact-label">Sound Cloud Resonance</span>
@@ -397,7 +397,7 @@
             }
         `;
 
-        // --- MASTER OBJECT SHADERS (OPRAVENÝ A ZKONTROLOVANÝ) ---
+        // --- MASTER OBJECT SHADERS ---
         const vertexShader = `
             uniform float uTime; varying vec3 vNormal; varying vec3 vViewPosition;
             void main() {
@@ -424,7 +424,6 @@
                 float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 8.5);
                 vec3 edgeReflection = reflectColor * fresnel * 0.85;
                 
-                // Opravená deklarace směrů před výpočtem mocnin (specularů)
                 vec3 halfDir1 = normalize(lightDir1 + viewDir);
                 vec3 halfDir2 = normalize(lightDir2 + viewDir);
                 
@@ -481,11 +480,9 @@
             }
 
             createGeometries() {
-                // TVARY PRO ÚVODNÍ STRANU (Koule a Prstence)
                 this.geoHomeSilver = new THREE.IcosahedronGeometry(0.5, 64);
                 this.geoHomeGreen = new THREE.TorusGeometry(0.42, 0.16, 32, 96);
 
-                // TVARY PRO KONTAKT (Krystaly a Uzly)
                 this.geoContactSilver = new THREE.OctahedronGeometry(0.52, 0); 
                 this.geoContactGreen = new THREE.TorusKnotGeometry(0.33, 0.11, 120, 16, 3, 4); 
             }
