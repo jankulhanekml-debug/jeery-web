@@ -298,4 +298,141 @@
 
                 // UPRAVENO: Jasnější a více kontrastní materiál (světlejší šedá s odlesky)
                 const material = new THREE.MeshPhysicalMaterial({
-                    color: 0x3a
+                    color: 0x3a3d45, // Světlejší odstín, aby objekty jasně vystoupily ze tmy
+                    metalness: 0.8,
+                    roughness: 0.15,
+                    clearcoat: 1.0,
+                    clearcoatRoughness: 0.05,
+                    reflectivity: 1.0
+                });
+
+                this.spiralGroup = new THREE.Group();
+                const count = 12;
+                const radius = 3.2;
+
+                for (let i = 0; i < count; i++) {
+                    // Střídání různých platonských těles podle indexu
+                    const geomIndex = i % geometries.length;
+                    const mesh = new THREE.Mesh(geometries[geomIndex], material);
+                    
+                    const angle = (i / count) * Math.PI * 4; 
+                    mesh.position.x = Math.cos(angle) * radius;
+                    mesh.position.z = Math.sin(angle) * radius;
+                    mesh.position.y = (i / count) * 8 - 4;
+
+                    mesh.userData = {
+                        angleOffset: angle,
+                        yBase: mesh.position.y,
+                        speed: 0.3 + Math.random() * 0.4
+                    };
+
+                    this.spiralGroup.add(mesh);
+                    this.meshArray.push(mesh);
+                }
+
+                this.scene.add(this.spiralGroup);
+            }
+
+            addLights() {
+                // ZVÝRAZNĚNO: Podstatně silnější studiové osvětlení
+                const ambient = new THREE.AmbientLight(0xffffff, 0.4); // Zvýšeno z 0.1
+                this.scene.add(ambient);
+
+                this.topLight = new THREE.DirectionalLight(0xffffff, 4.5); // Zvýšeno z 2.5
+                this.topLight.position.set(6, 12, 8);
+                this.scene.add(this.topLight);
+
+                const rimLight = new THREE.DirectionalLight(0xffffff, 3.0); // Zvýšeno z 1.5
+                rimLight.position.set(-6, -6, -4);
+                this.scene.add(rimLight);
+
+                // Kontrastní modro-bílý bod pro záření hran
+                const accentLight = new THREE.PointLight(0xffffff, 3, 20);
+                accentLight.position.set(0, 0, 4);
+                this.scene.add(accentLight);
+            }
+
+            addEvents() {
+                window.addEventListener('resize', () => {
+                    this.camera.aspect = window.innerWidth / window.innerHeight;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+                });
+
+                window.addEventListener('mousemove', (e) => {
+                    this.mouse.targetX = (e.clientX / window.innerWidth) * 2 - 1;
+                    this.mouse.targetY = -(e.clientY / window.innerHeight) * 2 + 1;
+                });
+            }
+
+            animate() {
+                requestAnimationFrame(this.animate.bind(this));
+                const time = this.clock.getElapsedTime();
+
+                this.mouse.x += (this.mouse.targetX - this.mouse.x) * 0.05;
+                this.mouse.y += (this.mouse.targetY - this.mouse.y) * 0.05;
+                this.camera.position.x = this.mouse.x * 2;
+                this.camera.position.y = this.mouse.y * 2;
+                this.camera.lookAt(0, 0, 0);
+
+                const radius = 3.2 + Math.sin(time * 0.5) * 0.3;
+
+                this.meshArray.forEach((mesh) => {
+                    const data = mesh.userData;
+                    const currentAngle = data.angleOffset + (time * 0.2);
+
+                    mesh.position.x = Math.cos(currentAngle) * radius;
+                    mesh.position.z = Math.sin(currentAngle) * radius;
+                    mesh.position.y = data.yBase + Math.sin(time + data.angleOffset) * 0.2;
+
+                    mesh.rotation.x += 0.01 * data.speed;
+                    mesh.rotation.y += 0.015 * data.speed;
+                });
+
+                this.spiralGroup.rotation.y = time * 0.02;
+
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+
+        function initAudioEngine() {
+            const audio = document.getElementById('bg-music');
+            const btn = document.getElementById('audio-toggle');
+            const btnText = document.getElementById('audio-status-text');
+
+            if (!audio || !btn) return;
+            audio.volume = 0.4;
+
+            const startPlaying = () => {
+                if (audio.paused) {
+                    audio.play().then(() => {
+                        btn.classList.add('playing');
+                        if (btnText) btnText.innerText = "Sound On";
+                    }).catch(e => console.log("Autoplay pass"));
+                }
+            };
+
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (audio.paused) {
+                    audio.play().then(() => {
+                        btn.classList.add('playing');
+                        if (btnText) btnText.innerText = "Sound On";
+                    }).catch(err => console.error(err));
+                } else {
+                    audio.pause();
+                    btn.classList.remove('playing');
+                    if (btnText) btnText.innerText = "Sound Off";
+                }
+            });
+
+            document.body.addEventListener('click', startPlaying, { once: true });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            new WebGLScene();
+            initAudioEngine();
+        });
+    </script>
+</body>
+</html>
